@@ -1,0 +1,195 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}Experience - {% endblock title %}
+
+{% block content %}
+  <div class="page-wrapper">
+    <div class="page-header">
+      <div class="container">
+        <div class="row align-items-center">
+          <div class="col-auto">
+            <span class="avatar avatar-lg rounded" style="background-image: url({% static 'static/avatars/003m.jpg' %})"></span>
+          </div>
+          <div class="col">
+            <h1 class="fw-bold">Professional Experience</h1>
+            <div class="my-2">Career history and professional achievements</div>
+          </div>
+          <div class="col-auto ms-auto">
+            <div class="btn-list">
+              <a href="#" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#add-experience-modal">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
+                Add Experience
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Page body -->
+    <div class="page-body">
+      <div class="container-xl">
+        <div class="row">
+          <div class="col-12">
+            <div class="card">
+              <div class="card-body">
+                <ul class="timeline">
+                  {% for exp in experiences %}
+                  <li class="timeline-event">
+                    <div class="timeline-event-icon bg-primary-lt">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 7m0 2a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z" /><path d="M8 7v-2a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v2" /></svg>
+                    </div>
+                    <div class="card timeline-event-card">
+                      <div class="card-body">
+                        <div class="text-muted float-end">
+                          {{ exp.date_debut|date:"F Y" }} - 
+                          {% if exp.date_fin %}
+                            {{ exp.date_fin|date:"F Y" }}
+                          {% else %}
+                            Present
+                          {% endif %}
+                        </div>
+                        <h4>{{ exp.fonction }}</h4>
+                        <p class="text-muted">
+                          <strong>{{ exp.entreprise }}</strong><br>
+                          {{ exp.name }}
+                        </p>
+                        <div class="mt-2">
+                          {% if exp.technologies %}
+                          <div class="mb-2">
+                            <strong>Technologies:</strong> {{ exp.technologies }}
+                          </div>
+                          {% endif %}
+                          {% if exp.location %}
+                          <div>
+                            <strong>Location:</strong> {{ exp.location }}
+                          </div>
+                          {% endif %}
+                        </div>
+                        <div class="btn-list mt-3">
+                          <button class="btn btn-sm btn-primary edit-experience-btn" data-id="{{ exp.id }}">
+                            Edit
+                          </button>
+                          <button class="btn btn-sm btn-danger delete-experience-btn" data-id="{{ exp.id }}">
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                  {% empty %}
+                  <li class="text-center text-muted py-5">
+                    No experience entries yet. Click "Add Experience" to get started.
+                  </li>
+                  {% endfor %}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% include 'includes/footer.html' %}
+  </div>
+
+  <!-- Modal Forms -->
+  {% include 'experiences/modals/add_experience.html' %}
+  {% include 'experiences/modals/edit_experience.html' %}
+  {% include 'experiences/modals/delete_experience.html' %}
+{% endblock content %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Add Experience
+    $('.add-experience-btn').on('click', function() {
+        $('#add-experience-modal').modal('show');
+    });
+    
+    // Edit Experience
+    $('.edit-experience-btn').on('click', function() {
+        const expId = $(this).data('id');
+        const modal = $('#edit-experience-modal');
+        
+        // Exemple de chargement des données via AJAX
+        $.ajax({
+            url: `/experiences/${expId}/`,
+            method: 'GET',
+            success: function(data) {
+                // Remplir le formulaire avec les données
+                modal.find('[name="name"]').val(data.name);
+                modal.find('[name="fonction"]').val(data.fonction);
+                modal.find('[name="entreprise"]').val(data.entreprise);
+                modal.find('[name="location"]').val(data.location);
+                modal.find('[name="date_debut"]').val(data.date_debut);
+                modal.find('[name="date_fin"]').val(data.date_fin);
+                modal.find('[name="technologies"]').val(data.technologies);
+                modal.find('[name="description"]').val(data.description);
+                
+                modal.modal('show');
+            }
+        });
+    });
+    
+    // Delete Experience
+    $('.delete-experience-btn').on('click', function() {
+        const expId = $(this).data('id');
+        const modal = $('#delete-experience-modal');
+        modal.find('#confirm-delete-btn').data('id', expId);
+        modal.modal('show');
+    });
+
+    // Handle form submission
+    $('#add-experience-form').on('submit', function(e) {
+        e.preventDefault();
+        const form = $(this);
+        const formData = new FormData(this);
+
+        $.ajax({
+            url: '/experiences/add/',
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if(response.success) {
+                    // Rafraîchir la page ou ajouter l'expérience à la liste
+                    location.reload();
+                    $('#add-experience-modal').modal('hide');
+                } else {
+                    // Gérer les erreurs
+                    alert('Error saving experience');
+                }
+            },
+            error: function() {
+                alert('Error saving experience');
+            }
+        });
+    });
+
+    // Handle delete confirmation
+    $('#confirm-delete-btn').on('click', function() {
+        const expId = $(this).data('id');
+        
+        $.ajax({
+            url: `/experiences/${expId}/delete/`,
+            method: 'POST',
+            data: {
+                csrfmiddlewaretoken: $('[name="csrfmiddlewaretoken"]').val()
+            },
+            success: function(response) {
+                if(response.success) {
+                    location.reload();
+                } else {
+                    alert('Error deleting experience');
+                }
+            },
+            error: function() {
+                alert('Error deleting experience');
+            }
+        });
+    });
+});
+</script>
+{% endblock extra_js %}
