@@ -1,41 +1,72 @@
 <!doctype html>
-<!--
-* Tabler - Premium and Open Source dashboard template with responsive and high quality UI.
-* @version 1.0.0-beta19
-* @link https://tabler.io
-* Copyright 2018-2023 The Tabler Authors
-* Copyright 2018-2023 codecalm.net Paweł Kuna
-* Licensed under MIT (https://github.com/tabler/tabler/blob/master/LICENSE)
--->
 {% load i18n static admin_resume %}
 {% get_current_language as LANGUAGE_CODE %}
 {% get_current_language_bidi as LANGUAGE_BIDI %}
 {% get_direction as direction %}
 {% get_admin_setting as admin_setting %}
-<html lang="en">
-  <head>
-    <title>{% block title %}{% endblock title %} Tabler - Premium and Open Source dashboard template with responsive and high quality UI.</title>
-    {% block extrastyle %}{% endblock extrastyle %}
+{% load i18n %}
+
+<html lang="fr">
+<head>
+    <title>{% block title %}{% endblock title %} CV.</title>
+
+    <!-- Styles CSS supplémentaires -->
+    {% block extrastyle %}
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noty/3.1.4/noty.css">
+    {% endblock extrastyle %}
+
+    <!-- Inclure les éléments généraux -->
     {% include 'includes/head.html' %}
     {% block extrahead %}{% endblock extrahead %}
-  </head>
-  <body class="{% block body %}{% endblock body %}">
+
+    <!-- Chargement des scripts JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/noty/3.1.4/noty.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.inputmask/5.0.8/jquery.inputmask.min.js"></script>
+    <script src="{% static 'js/global.js' %}"></script>
+    <script src="{% url 'javascript-catalog' %}"></script>
+</head>
+
+<body class="{% block body %}{% endblock body %}">
+
+    <!-- Script principal du thème -->
     <script src="{% static 'dist/js/demo-theme.min.js' %}?1684106062"></script>
+
+    <!-- Contenu principal -->
     <div class="page">
-        <!-- Navbar -->
         {% block navigation %}
             {% include 'includes/navigation.html' %}
         {% endblock navigation %}
+
         {% block sidebar %}
             {% include 'includes/sidebar.html' %}
         {% endblock sidebar %}
+
         {% block content %}{% endblock content %}
     </div>
+
+    <!-- Section des modaux -->
     {% block modal %}{% endblock modal %}
-    <!-- Tabler Core -->
+
+    <!-- Scripts principaux de Tabler -->
     {% block scripts %}
         {% include 'includes/scripts.html' %}
     {% endblock scripts %}
+
+    <!-- Scripts supplémentaires -->
     {% block extrajs %}{% endblock extrajs %}
-  </body>
+
+    <!-- Vérification du chargement de Noty -->
+    <script>
+        $(document).ready(function() {
+            console.log("jQuery est prêt !");
+            console.log("Noty est chargé :", typeof Noty !== "undefined");
+
+            if (typeof Noty === "undefined") {
+                console.error("Erreur : Noty.js n'est pas chargé correctement !");
+            }
+        });
+    </script>
+
+</body>
 </html>

@@ -3,57 +3,57 @@
 Copyright (c) 2019 - present AppSeed.us
 """
 
-from enum import Enum
+from django.db import models
 
-class BaseStatus(Enum):
+class BaseStatus(models.TextChoices):
     ACTIVE = 'active'
     INACTIVE = 'inactive'
     ARCHIVED = 'archived'
     DELETED = 'deleted'
 
-class UserProfileStatus(Enum):
+class UserProfileStatus(models.TextChoices):
     ACTIVE = 'active'
     INACTIVE = 'inactive'
     BLOCKED = 'blocked'
 
-class ExperienceStatus(Enum):
-    ACTIVE = 'active'
-    ARCHIVED = 'archived'
-    DRAFT = 'draft'
+class ExperienceStatus(models.TextChoices):
+    EN_COURS = 'EN COURS'
+    TERMINER = 'TERMINER'
+    SUPPRIMER = 'SUPPRIMER'
 
-class EducationStatus(Enum):
+class EducationStatus(models.TextChoices):
     ACTIVE = 'active'
     COMPLETED = 'completed'
     ONGOING = 'ongoing'
 
-class ProfilStatus(Enum):
+class ProfilStatus(models.TextChoices):
     PUBLIC = 'public'
     PRIVATE = 'private'
     HIDDEN = 'hidden'
 
-class ContactStatus(Enum):
+class ContactStatus(models.TextChoices):
     ACTIVE = 'active'
     ARCHIVED = 'archived'
     PRIVATE = 'private'
 
-class ContactType(Enum):
+class ContactType(models.TextChoices):
     EMAIL = 'email'
     PHONE = 'phone'
     SOCIAL = 'social'
     OTHER = 'other'
 
-class CompetanceStatus(Enum):
+class CompetanceStatus(models.TextChoices):
     ACTIVE = 'active'
     ARCHIVED = 'archived'
     LEARNING = 'learning'
 
-class ProjectStatus(Enum):
+class ProjectStatus(models.TextChoices):
     ACTIVE = 'active'
     COMPLETED = 'completed'
     ONGOING = 'ongoing'
     ARCHIVED = 'archived'
 
-class AvisStatus(Enum):
+class AvisStatus(models.TextChoices):
     PENDING = 'pending'
     APPROVED = 'approved'
     REJECTED = 'rejected'

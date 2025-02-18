@@ -1,0 +1,53 @@
+msgid "UserProfile"
+msgstr "Profil d'utilisateur"
+
+msgid "UserProfile"
+msgstr "Profils d'utilisateur"
+
+msgid "Experience"
+msgstr "Expérience"
+
+msgid "Experience"
+msgstr "Expériences"
+
+msgid "Education"
+msgstr "Éducation"
+
+msgid "Education"
+msgstr "Éducations"
+
+msgid "Profil"
+msgstr "Profil"
+
+msgid "Profil"
+msgstr "Profils"
+
+msgid "Loisirs"
+msgstr "Loisirs"
+
+msgid "Loisirs"
+msgstr "Loisirs"
+
+msgid "Contact"
+msgstr "Contact"
+
+msgid "Contact"
+msgstr "Contacts"
+
+msgid "Competance"
+msgstr "Compétence"
+
+msgid "Competance"
+msgstr "Compétences"
+
+msgid "Project"
+msgstr "Projet"
+
+msgid "Project"
+msgstr "Projets"
+
+msgid "Avis"
+msgstr "Avis"
+
+msgid "Avis"
+msgstr "Avis"

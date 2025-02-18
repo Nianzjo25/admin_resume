@@ -26,7 +26,6 @@ class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
 
     #__PROFILE_FIELDS__
-    # id = models.CharField(max_length=255, null=True, blank=True)
     nom = models.CharField(max_length=255, null=True, blank=True)
     prenoms = models.CharField(max_length=255, null=True, blank=True)
     date_naissance = models.DateTimeField(blank=True, null=True, default=timezone.now)
@@ -48,41 +47,49 @@ class UserProfile(models.Model):
         return self.user.username
     
     class Meta:
+        db_table = "user_profil"
         verbose_name        = _("UserProfile")
         verbose_name_plural = _("UserProfile")
 
-#__MODELS__
 class Experience(models.Model):
-    #__Experience_FIELDS__
-    # id = models.IntegerField(null=True, blank=True)
-    name = models.CharField(max_length=255, null=True, blank=True)
-    date_debut = models.DateTimeField(blank=True, null=True, default=timezone.now)
-    date_fin = models.DateTimeField(blank=True, null=True, default=timezone.now)
-    entreprise = models.CharField(max_length=255, null=True, blank=True)
-    fonction = models.CharField(max_length=255, null=True, blank=True)
-    user = models.ForeignKey(UserProfile, on_delete=models.RESTRICT)
+    name = models.CharField(max_length=255)
+    date_debut = models.DateField()
+    date_fin = models.DateField(null=True, blank=True)
+    entreprise = models.CharField(max_length=255)
+    fonction = models.CharField(max_length=255)
+    user = models.ForeignKey('UserProfile', on_delete=models.RESTRICT)
     status = models.CharField(
         max_length=20,
-        choices=[(status.value, status.name) for status in ExperienceStatus],
-        default=ExperienceStatus.ACTIVE.value
+        choices=ExperienceStatus.choices,
+        default=ExperienceStatus.EN_COURS
     )
-    description = models.TextField(null=True, blank=True)
+    description = models.TextField()
     technologies = models.CharField(max_length=255, null=True, blank=True)
-    location = models.CharField(max_length=255, null=True, blank=True)
+    location = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    #__Experience_FIELDS__END
-
     class Meta:
-        db_table            = _("experience")
-        verbose_name        = _("Experience")
+        db_table = "experience"
+        verbose_name = _("Experience")
         verbose_name_plural = _("Experience")
+        ordering = ['-date_debut']
 
+    def save(self, *args, **kwargs):
+        if not self.pk and self.status == ExperienceStatus.EN_COURS:
+            previous_active = Experience.objects.filter(
+                user=self.user,
+                status=ExperienceStatus.EN_COURS
+            ).first()
+            
+            if previous_active:
+                previous_active.status = ExperienceStatus.TERMINER
+                previous_active.date_fin = self.date_debut
+                previous_active.save()
+
+        super().save(*args, **kwargs)
 
 class Education(models.Model):
-    #__Education_FIELDS__
-    # id = models.IntegerField(null=True, blank=True)
     nom = models.CharField(max_length=255, null=True, blank=True)
     annee = models.DateTimeField(blank=True, null=True, default=timezone.now)
     intitule = models.CharField(max_length=255, null=True, blank=True)
@@ -99,16 +106,13 @@ class Education(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    #__Education_FIELDS__END
-
     class Meta:
-        verbose_name        = _("Education")
+        db_table = "education"
+        verbose_name = _("Education")
         verbose_name_plural = _("Education")
 
 
 class Profil(models.Model):
-    #__Profil_FIELDS__
-    # id = models.IntegerField(null=True, blank=True)
     description = models.CharField(max_length=255, null=True, blank=True)
     user = models.OneToOneField(UserProfile, on_delete=models.RESTRICT)
     status = models.CharField(
@@ -123,16 +127,13 @@ class Profil(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    #__Profil_FIELDS__END
-
     class Meta:
-        verbose_name        = _("Profil")
+        db_table = "profil"
+        verbose_name = _("Profil")
         verbose_name_plural = _("Profil")
 
 
 class Loisirs(models.Model):
-    #__Loisirs_FIELDS__
-    # id = models.IntegerField(null=True, blank=True)
     type = models.CharField(max_length=255, null=True, blank=True)
     niveau = models.IntegerField(null=True, blank=True)
     user = models.ForeignKey(UserProfile, on_delete=models.RESTRICT)
@@ -146,16 +147,13 @@ class Loisirs(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    #__Loisirs_FIELDS__END
-
     class Meta:
-        verbose_name        = _("Loisirs")
+        db_table = "loisirs"
+        verbose_name = _("Loisirs")
         verbose_name_plural = _("Loisirs")
 
 
 class Contact(models.Model):
-    #__Contact_FIELDS__
-    # id = models.IntegerField(null=True, blank=True)
     type = models.CharField(
         max_length=20,
         choices=[(type.value, type.name) for type in ContactType],
@@ -174,16 +172,13 @@ class Contact(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    #__Contact_FIELDS__END
-
     class Meta:
-        verbose_name        = _("Contact")
+        db_table = "contact"
+        verbose_name = _("Contact")
         verbose_name_plural = _("Contact")
 
 
 class Competance(models.Model):
-    #__Competance_FIELDS__
-    # id = models.IntegerField(null=True, blank=True)
     nom = models.CharField(max_length=255, null=True, blank=True)
     niveau = models.IntegerField(null=True, blank=True)
     description = models.CharField(max_length=255, null=True, blank=True)
@@ -199,16 +194,13 @@ class Competance(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    #__Competance_FIELDS__END
-
     class Meta:
-        verbose_name        = _("Competance")
+        db_table = "competance"
+        verbose_name = _("Competance")
         verbose_name_plural = _("Competance")
 
 
 class Project(models.Model):
-    #__Project_FIELDS__
-    # id = models.IntegerField(null=True, blank=True)
     nom = models.CharField(max_length=255, null=True, blank=True)
     description = models.CharField(max_length=255, null=True, blank=True)
     lien = models.CharField(max_length=255, null=True, blank=True)
@@ -228,15 +220,13 @@ class Project(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    #__Project_FIELDS__END
-
     class Meta:
-        verbose_name        = _("Project")
+        db_table = "project"
+        verbose_name = _("Project")
         verbose_name_plural = _("Project")
 
 
 class Avis(models.Model):
-    #__Avis_FIELDS__
     nom = models.CharField(max_length=255, null=True, blank=True)
     prenoms = models.CharField(max_length=255, null=True, blank=True)
     date_naissance = models.DateTimeField(blank=True, null=True, default=timezone.now)
@@ -257,10 +247,9 @@ class Avis(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    #__Avis_FIELDS__END
-
     class Meta:
-        verbose_name        = _("Avis")
+        db_table = "avis"
+        verbose_name = _("Avis")
         verbose_name_plural = _("Avis")
 
 

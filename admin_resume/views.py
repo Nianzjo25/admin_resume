@@ -1,14 +1,20 @@
+from pyexpat.errors import messages
 from django.shortcuts import render, redirect
 from datetime import datetime
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
+from django.db import transaction
 from django.views.generic import TemplateView
+from django.core.paginator import Paginator
+from django.db.models import Sum, Q, ExpressionWrapper, F, DurationField
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.contrib.auth.views import LoginView, PasswordResetView, PasswordChangeView, PasswordResetConfirmView
+from admin_resume.enums import ExperienceStatus
 from admin_resume.forms import RegistrationForm, LoginForm, UserPasswordResetForm, UserSetPasswordForm, UserPasswordChangeForm
 from django.contrib.auth import logout
 from django.views.generic import CreateView
+from django.utils.translation import gettext_lazy as _
 
 from django.contrib.auth.decorators import login_required
 
@@ -29,13 +35,13 @@ class ExperienceView(LoginRequiredMixin, TemplateView):
     def get(self, request):
         """Affiche la page principale des expériences"""
         experiences = Experience.objects.filter(
-            user=request.user.userprofile,
-            status='active'
+            user=request.user.userprofile
         )
         context = {
             'page_title': 'Expériences professionnelles',
             'page_subtitle': 'Gérez votre parcours professionnel',
-            'experiences': experiences
+            'experiences': experiences,
+            'segment': 'experience'
         }
         return render(request, self.template_name, context)
 
@@ -51,8 +57,7 @@ def experiences_datatables(request):
         search = request.GET.get('search[value]', '')
         
         queryset = Experience.objects.filter(
-            user=request.user.userprofile,
-            status='active'
+            user=request.user.userprofile
         )
         
         # Map column index to corresponding model field for sorting
@@ -118,94 +123,126 @@ def experiences_datatables(request):
             'error': str(e)
         }, status=400)
         
-        
-def add_experience(self, request):
-    """Ajoute une nouvelle expérience"""
-    try:
-        data = {
-            'name': request.POST.get('name'),
-            'fonction': request.POST.get('fonction'),
-            'entreprise': request.POST.get('entreprise'),
-            'date_debut': datetime.strptime(request.POST.get('date_debut'), '%Y-%m-%d'),
-            'date_fin': datetime.strptime(request.POST.get('date_fin'), '%Y-%m-%d') if request.POST.get('date_fin') else None,
-            'description': request.POST.get('description'),
-            'technologies': request.POST.get('technologies'),
-            'location': request.POST.get('location'),
-            'user': request.user.userprofile,
-            'status': 'active'
-        }
-        
-        Experience.objects.create(**data)
-        
-        return JsonResponse({
-            'status': 'success',
-            'message': 'Expérience ajoutée avec succès'
-        })
-        
-    except Exception as e:
-        return JsonResponse({
-            'status': 'error',
-            'message': str(e)
-        }, status=400)
+@login_required
+@transaction.atomic
+def add_experience(request):
+    if request.method == 'POST':
+        try:
+            form_data = {
+                'name': request.POST.get('name', '').strip(),
+                'fonction': request.POST.get('fonction', '').strip(),
+                'entreprise': request.POST.get('entreprise', '').strip(),
+                'location': request.POST.get('location', '').strip(),
+                'technologies': request.POST.get('technologies', '').strip(),
+                'description': request.POST.get('description', '').strip(),
+                'date_debut': request.POST.get('date_debut'),
+                'simultaneous_work': request.POST.get('simultaneous_work') == 'true'
+            }
 
-def update_experience(self, request, experience_id):
-    """Modifie une expérience existante"""
-    try:
-        experience = Experience.objects.filter(
-            id=experience_id, 
-            user=request.user.userprofile,
-            status='active'
-        )
-        
-        data = request.POST
-        experience.name = data.get('name', experience.name)
-        experience.fonction = data.get('fonction', experience.fonction)
-        experience.entreprise = data.get('entreprise', experience.entreprise)
-        if data.get('date_debut'):
-            experience.date_debut = datetime.strptime(data.get('date_debut'), '%Y-%m-%d')
-        if data.get('date_fin'):
-            experience.date_fin = datetime.strptime(data.get('date_fin'), '%Y-%m-%d')
-        experience.description = data.get('description', experience.description)
-        experience.technologies = data.get('technologies', experience.technologies)
-        experience.location = data.get('location', experience.location)
-        
+            # Validation des champs requis
+            required_fields = ['name', 'fonction', 'entreprise', 'location', 'date_debut', 'description']
+            errors = {}
+            
+            for field in required_fields:
+                if not form_data.get(field):
+                    errors[field] = _("Ce champ est obligatoire")
+
+            if errors:
+                return JsonResponse({
+                    'status': False,
+                    'message': _("Veuillez corriger les erreurs suivantes"),
+                    'errors': errors
+                })
+
+            # Si ce n'est pas un travail simultané, mettre à jour l'expérience précédente
+            if not form_data['simultaneous_work']:
+                previous_active = Experience.objects.filter(
+                    user=request.user.userprofile,
+                    status=ExperienceStatus.EN_COURS,
+                ).first()
+                
+                if previous_active:
+                    previous_active.status = ExperienceStatus.TERMINER
+                    previous_active.date_fin = form_data['date_debut']
+                    previous_active.save()
+
+            # Création de l'expérience
+            experience = Experience.objects.create(
+                user=request.user.userprofile,
+                name=form_data['name'],
+                fonction=form_data['fonction'],
+                entreprise=form_data['entreprise'],
+                location=form_data['location'],
+                technologies=form_data['technologies'],
+                description=form_data['description'],
+                date_debut=form_data['date_debut'],
+                status=ExperienceStatus.EN_COURS,
+            )
+
+            return JsonResponse({
+                'status': 1,
+                'message': _("Expérience ajoutée avec succès !"),
+                'redirect': reverse('experience')
+            })
+
+        except Exception as e:
+            return JsonResponse({
+                'status': 1,
+                'message': str(e)
+            })
+
+@login_required
+@transaction.atomic
+def update_experience(request, experience_id):
+    experience = Experience.objects.get(id=experience_id, user=request.user.userprofile)
+    
+    if request.method == 'POST':
+        # Mise à jour des données
+        experience.name = request.POST.get('name', '').strip()
+        experience.fonction = request.POST.get('fonction', '').strip()
+        experience.entreprise = request.POST.get('entreprise', '').strip()
+        experience.location = request.POST.get('location', '').strip()
+        experience.technologies = request.POST.get('technologies', '').strip()
+        experience.description = request.POST.get('description', '').strip()
+        experience.date_debut = request.POST.get('date_debut')
+        experience.date_fin = request.POST.get('date_fin')
         experience.save()
-        
-        return JsonResponse({
-            'status': 'success',
-            'message': 'Expérience modifiée avec succès'
-        })
-        
-    except Exception as e:
-        return JsonResponse({
-            'status': 'error',
-            'message': str(e)
-        }, status=400)
 
-def delete_experience(self, request, experience_id):
-    """Marque une expérience comme supprimée"""
-    try:
-        experience = Experience.objects.filter(
-            id=experience_id, 
+        response = {
+            'statut': 1,
+            'message': _("Modification effectuée avec succès !"),
+            'data': {
+                'id': experience.pk,
+                'numero': experience.numero,
+                'name': experience.name,
+                'fonction': experience.fonction
+            }
+        }
+
+        return JsonResponse(response)
+    else:
+        return render(request, 'experiences/modal_edit_experience.html',
+                     {'experience': experience})
+
+@login_required
+@transaction.atomic
+def delete_experience(request):
+    if request.method == "POST":
+        experience_id = request.POST.get('experience_id')
+        experience = Experience.objects.get(
+            id=experience_id,
             user=request.user.userprofile,
             status='active'
         )
         experience.status = 'deleted'
         experience.save()
         
-        return JsonResponse({
-            'status': 'success',
-            'message': 'Expérience supprimée avec succès'
-        })
-        
-    except Exception as e:
-        return JsonResponse({
-            'status': 'error',
-            'message': str(e)
-        }, status=400)
-
-        
-
+        response = {
+            'statut': 1,
+            'message': _("Experience supprimée avec succès !"),
+        }
+        return JsonResponse(response)
+    
 # Authentication
 class RegistrationView(CreateView):
     template_name = 'pages/sign-up.html'
@@ -263,6 +300,13 @@ def error_500(request):
 
 def maintenance(request):
     return render(request, 'pages/error-maintenance.html')
+
+def page_loader(request):
+    context = {
+        'parent': 'extra',
+        'segment': 'page_loader',
+    }
+    return render(request, 'pages/page-loader.html', context)
 
 
 def form_elements(request):

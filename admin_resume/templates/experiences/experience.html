@@ -1,6 +1,7 @@
 {% extends 'layouts/base.html' %}
 {% load static %}
 
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noty/3.2.0/noty.min.css" />
 {% block title %}Experience - {% endblock title %}
 
 {% block content %}
@@ -17,10 +18,14 @@
           </div>
           <div class="col-auto ms-auto">
             <div class="btn-list">
-              <a href="#" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#add-experience-modal">
-                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
+              <span id="btn-add-experience" class="btn btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M12 5l0 14" />
+                    <path d="M5 12l14 0" />
+                </svg>
                 Add Experience
-              </a>
+            </span>
             </div>
           </div>
         </div>
@@ -98,98 +103,188 @@
   {% include 'experiences/modals/delete_experience.html' %}
 {% endblock content %}
 
-{% block extra_js %}
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+{% block extrajs %}
 <script>
+
+  // Experience handling code
 $(document).ready(function() {
-    // Add Experience
-    $('.add-experience-btn').on('click', function() {
-        $('#add-experience-modal').modal('show');
-    });
-    
-    // Edit Experience
-    $('.edit-experience-btn').on('click', function() {
-        const expId = $(this).data('id');
-        const modal = $('#edit-experience-modal');
-        
-        // Exemple de chargement des données via AJAX
-        $.ajax({
-            url: `/experiences/${expId}/`,
-            method: 'GET',
-            success: function(data) {
-                // Remplir le formulaire avec les données
-                modal.find('[name="name"]').val(data.name);
-                modal.find('[name="fonction"]').val(data.fonction);
-                modal.find('[name="entreprise"]').val(data.entreprise);
-                modal.find('[name="location"]').val(data.location);
-                modal.find('[name="date_debut"]').val(data.date_debut);
-                modal.find('[name="date_fin"]').val(data.date_fin);
-                modal.find('[name="technologies"]').val(data.technologies);
-                modal.find('[name="description"]').val(data.description);
-                
-                modal.modal('show');
-            }
-        });
-    });
-    
-    // Delete Experience
-    $('.delete-experience-btn').on('click', function() {
-        const expId = $(this).data('id');
-        const modal = $('#delete-experience-modal');
-        modal.find('#confirm-delete-btn').data('id', expId);
-        modal.modal('show');
-    });
+  // Add jQuery validate plugin if it doesn't exist
+  if (typeof $.validator === 'undefined') {
+      // Load jQuery validate from CDN
+      $.getScript('https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js', function() {
+          setupFormValidation();
+      });
+  } else {
+      setupFormValidation();
+  }
 
-    // Handle form submission
-    $('#add-experience-form').on('submit', function(e) {
-        e.preventDefault();
-        const form = $(this);
-        const formData = new FormData(this);
+  function setupFormValidation() {
+      //************* AJOUT D'EXPERIENCE ***************//
+      $("#btn-add-experience").on('click', function() {
+          $('#add-experience-modal').modal('show');
+          window.AppliquerMaskSaisie();
+      });
 
-        $.ajax({
-            url: '/experiences/add/',
-            method: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function(response) {
-                if(response.success) {
-                    // Rafraîchir la page ou ajouter l'expérience à la liste
-                    location.reload();
-                    $('#add-experience-modal').modal('hide');
-                } else {
-                    // Gérer les erreurs
-                    alert('Error saving experience');
-                }
-            },
-            error: function() {
-                alert('Error saving experience');
-            }
-        });
-    });
+      //Bouton d'enregistrement de l'expérience
+      $("#btn-save-experience").on('click', function() {
+          let btn_save_experience = $(this);
+          let formulaire = $('#add-experience-form');
+          let href = formulaire.attr('action');
 
-    // Handle delete confirmation
-    $('#confirm-delete-btn').on('click', function() {
-        const expId = $(this).data('id');
-        
-        $.ajax({
-            url: `/experiences/${expId}/delete/`,
-            method: 'POST',
-            data: {
-                csrfmiddlewaretoken: $('[name="csrfmiddlewaretoken"]').val()
-            },
-            success: function(response) {
-                if(response.success) {
-                    location.reload();
-                } else {
-                    alert('Error deleting experience');
-                }
-            },
-            error: function() {
-                alert('Error deleting experience');
-            }
-        });
-    });
+          $.validator.setDefaults({ ignore: [] });
+          
+          // Création d'un FormData pour gérer les fichiers
+          let formData = new FormData();
+          
+          // Récupérer tous les fichiers s'il y en a
+          let certificatFiles = $('#add-experience-form #certificat_file')[0]?.files;
+          let attachmentFiles = $('#add-experience-form #attachment_file')[0]?.files;
+
+          if (formulaire.valid()) {
+              btn_save_experience.attr('disabled', true);
+
+              //demander confirmation
+              let n = noty({
+                  text: gettext('Voulez-vous vraiment créer cette expérience ?'),
+                  type: 'warning',
+                  dismissQueue: true,
+                  layout: 'center',
+                  theme: 'defaultTheme',
+                  buttons: [
+                      {
+                          addClass: 'btn btn-primary', text: gettext('OUI'), onClick: function($noty) {
+                              $noty.close();
+
+                              // Ajouter les fichiers au FormData
+                              if (certificatFiles && certificatFiles.length > 0) {
+                                  formData.append('certificat_file', certificatFiles[0]);
+                              }
+                              
+                              if (attachmentFiles && attachmentFiles.length > 0) {
+                                  formData.append('attachment_file', attachmentFiles[0]);
+                              }
+                              
+                              // Sérialiser les données du formulaire et les ajouter au FormData
+                              let data_serialized = formulaire.serialize();
+                              $.each(data_serialized.split('&'), function(index, elem) {
+                                  let vals = elem.split('=');
+                                  let key = vals[0];
+                                  let valeur = decodeURIComponent(vals[1].replace(/\+/g, ' '));
+                                  formData.append(key, valeur);
+                              });
+
+                              $.ajax({
+                                  type: 'post',
+                                  url: href,
+                                  data: formData,
+                                  processData: false,
+                                  contentType: false,
+                                  success: function(response) {
+                                      if (response.status == 1) {
+                                          // Vider le formulaire
+                                          resetFields('#' + formulaire.attr('id'));
+                                          
+                                          notifySuccess(response.message, function() {
+                                              location.reload();
+                                          });
+                                      } else {
+                                          let errors = JSON.parse(JSON.stringify(response.errors));
+                                          let errors_list_to_display = '';
+                                          for (field in errors) {
+                                              errors_list_to_display += '- ' + ucfirst(field) + ' : ' + errors[field] + '<br/>';
+                                          }
+
+                                          $('#add-experience-modal .alert .message').html(errors_list_to_display);
+                                          $('#add-experience-modal .alert').fadeTo(2000, 500).slideUp(500, function() {
+                                              $(this).slideUp(500);
+                                          }).removeClass('alert-success').addClass('alert-warning');
+                                          
+                                          btn_save_experience.removeAttr('disabled');
+                                      }
+                                  },
+                                  error: function(request, status, error) {
+                                      notifyWarning(gettext("Erreur lors de l'enregistrement"));
+                                      btn_save_experience.removeAttr('disabled');
+                                  }
+                              });
+                          }
+                      },
+                      {
+                          addClass: 'btn btn-danger', text: gettext('Annuler'), onClick: function($noty) {
+                              $noty.close();
+                              btn_save_experience.removeAttr('disabled');
+                          }
+                      }
+                  ]
+              });
+              //fin demande confirmation
+
+          } else {
+              $('label.error').css({ display: 'none', height: '0px' }).removeClass('error').text('');
+
+              let validator = formulaire.validate();
+              $.each(validator.errorMap, function(index, value) {
+                  console.log('Id: ' + index + ' Message: ' + value);
+              });
+
+              notifyWarning(gettext('Veuillez renseigner tous les champs obligatoires'));
+              btn_save_experience.removeAttr('disabled');
+          }
+      });
+
+      // Handle modal closing - reset form
+      $('#add-experience-modal').on('hidden.bs.modal', function() {
+          resetFields('#add-experience-form');
+          $('#add-experience-form .alert').hide();
+          $('#add-experience-form .is-invalid').removeClass('is-invalid');
+          $('#add-experience-form .invalid-feedback').text('');
+      });
+
+      // Handle the "Current Position" checkbox to toggle date_fin field
+      $('#en_cours').on('change', function() {
+          if ($(this).is(':checked')) {
+              $('#date_fin').prop('disabled', true).val('');
+              $('<input>').attr({
+                  type: 'hidden',
+                  name: 'simultaneous_work',
+                  value: 'true'
+              }).appendTo('#add-experience-form');
+          } else {
+              $('#date_fin').prop('disabled', false);
+              $('#add-experience-form input[name="simultaneous_work"]').remove();
+          }
+      });
+
+      // Validation using jQuery Validate plugin
+      $('#add-experience-form').validate({
+          errorPlacement: function(error, element) {
+              element.siblings('.invalid-feedback').text(error.text());
+          },
+          highlight: function(element) {
+              $(element).addClass('is-invalid');
+          },
+          unhighlight: function(element) {
+              $(element).removeClass('is-invalid');
+          },
+          rules: {
+              name: "required",
+              fonction: "required",
+              entreprise: "required",
+              location: "required",
+              date_debut: "required",
+              description: "required"
+          },
+          messages: {
+              name: gettext("Ce champ est obligatoire"),
+              fonction: gettext("Ce champ est obligatoire"),
+              entreprise: gettext("Ce champ est obligatoire"),
+              location: gettext("Ce champ est obligatoire"),
+              date_debut: gettext("Ce champ est obligatoire"),
+              description: gettext("Ce champ est obligatoire")
+          }
+      });
+  }
 });
+
 </script>
-{% endblock extra_js %}
+{% endblock %}

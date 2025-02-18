@@ -40,6 +40,9 @@ DEBUG = os.environ.get("DEBUG", True)
 
 APP_DOMAIN = os.getenv("APP_DOMAIN", "localhost")
 
+# Contains the path list where Django should look into for django.po files for all supported languages
+LOCALE_PATHS = (os.path.join(BASE_DIR, "locale"),)
+
 # HOSTs List
 ALLOWED_HOSTS = ["127.0.0.1", "localhost", APP_DOMAIN, ".deploypro.dev"]
 
@@ -101,7 +104,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'my_resume_complete.wsgi.application'
 
 
-
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
@@ -113,9 +115,10 @@ DB_PORT = os.getenv("DB_PORT", None)
 DB_NAME = os.getenv("DB_NAME", None)
 
 if DB_ENGINE and DB_NAME and DB_USERNAME:
+    print("************************************************************",DB_ENGINE,"**************************************************")
     DATABASES = {
         "default": {
-            "ENGINE": "django.db.backends." + DB_ENGINE,
+            "ENGINE": f"django.db.backends.{DB_ENGINE}",  
             "NAME": DB_NAME,
             "USER": DB_USERNAME,
             "PASSWORD": DB_PASS,

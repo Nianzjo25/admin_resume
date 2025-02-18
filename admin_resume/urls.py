@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import CustomLoginView, ExperienceView, LoginView, LoginViewCover, LoginViewIllustrator, PasswordReset, RegistrationView, UserPasswordChangeView, UserPasswordResetConfirmView, changelog, error_404, error_500, form_elements, icons, index, lock_screen, login_link, logout_view, maintenance, terms_service, profile, settings
+from .views import CustomLoginView, ExperienceView, LoginView, LoginViewCover, LoginViewIllustrator, PasswordReset, RegistrationView, UserPasswordChangeView, UserPasswordResetConfirmView, add_experience, changelog, error_404, error_500, experiences_datatables, form_elements, icons, index, lock_screen, login_link, logout_view, maintenance, page_loader, terms_service, profile, settings
 from django.contrib.auth import views as auth_views
 
 urlpatterns = [
@@ -8,6 +8,8 @@ urlpatterns = [
     
     # Experience
     path('experience/', ExperienceView.as_view(), name='experience'),
+    path('experiences_datatables/', experiences_datatables, name='experiences_datatables'),
+    path('add_experience/', add_experience, name='add_experience'),
 
     # Authentication
     
@@ -42,6 +44,8 @@ urlpatterns = [
     path('error/404/', error_404, name='error_404'),
     path('error/500/', error_500, name='error_500'),
     path('error/maintenance/', maintenance, name='maintenance'),
+
+    path('page-loader/', page_loader, name='page_loader'),
 
     path('form-elements/', form_elements, name='form_elements'),
     path('settings/', settings, name='settings'),

@@ -1,62 +1,79 @@
-{# Modal Add Experience #}
 <div class="modal modal-blur fade" id="add-experience-modal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Add New Experience</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <form id="add-experience-form">
-          <div class="modal-body">
-            <div class="row mb-3">
-              <div class="col-lg-6">
-                <label class="form-label required">Name</label>
-                <input type="text" class="form-control" name="name" required>
-              </div>
-              <div class="col-lg-6">
-                <label class="form-label required">Job Title</label>
-                <input type="text" class="form-control" name="fonction" required>
-              </div>
-            </div>
-            <div class="row mb-3">
-              <div class="col-lg-6">
-                <label class="form-label required">Company</label>
-                <input type="text" class="form-control" name="entreprise" required>
-              </div>
-              <div class="col-lg-6">
-                <label class="form-label required">Location</label>
-                <input type="text" class="form-control" name="location" required>
-              </div>
-            </div>
-            <div class="row mb-3">
-              <div class="col-lg-6">
-                <label class="form-label required">Start Date</label>
-                <input type="date" class="form-control" name="date_debut" required>
-              </div>
-              <div class="col-lg-6">
-                <label class="form-label">End Date</label>
-                <input type="date" class="form-control" name="date_fin">
-                <small class="form-hint">Leave empty if this is your current position</small>
-              </div>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Technologies Used</label>
-              <input type="text" class="form-control" name="technologies" 
-                     placeholder="e.g. Python, Django, JavaScript, React">
-              <small class="form-hint">Comma separated list of technologies</small>
-            </div>
-            <div class="mb-3">
-              <label class="form-label required">Description</label>
-              <textarea class="form-control" name="description" rows="4" required></textarea>
-              <small class="form-hint">Describe your role, responsibilities and achievements</small>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn me-auto" data-bs-dismiss="modal">Cancel</button>
-            <button type="submit" class="btn btn-primary">Save Experience</button>
-          </div>
-        </form>
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{{_('AJOUTER_EXPERIENCE_PROFESSIONNELLE')}}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
+      <form id="add-experience-form" action="{% url 'add_experience' %}" method="post">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="alert" role="alert" style="display: none;">
+            <span class="message"></span>
+          </div>
+          <div class="row mb-3">
+            <div class="col-lg-6">
+              <label class="form-label required">{{_('Nom')}}</label>
+              <input type="text" class="form-control" name="name" required>
+              <div class="invalid-feedback"></div>
+            </div>
+            <div class="col-lg-6">
+              <label class="form-label required">{{_('Titre_Poste')}}</label>
+              <input type="text" class="form-control" name="fonction" required>
+              <div class="invalid-feedback"></div>
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-lg-6">
+              <label class="form-label required">{{_('Entreprise')}}</label>
+              <input type="text" class="form-control" name="entreprise" required>
+              <div class="invalid-feedback"></div>
+            </div>
+            <div class="col-lg-6">
+              <label class="form-label required">{{_('Localisation')}}</label>
+              <input type="text" class="form-control" name="location" required>
+              <div class="invalid-feedback"></div>
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-lg-6">
+              <label class="form-label required">{{_('Date_Debut')}}</label>
+              <input type="date" class="form-control" name="date_debut" required>
+              <div class="invalid-feedback"></div>
+            </div>
+            <div class="col-lg-6">
+              <label class="form-label">{{_('Date_Fin')}}</label>
+              <input type="date" class="form-control" name="date_fin" id="date_fin">
+              <div class="invalid-feedback"></div>
+            </div>
+          </div>
+          <div class="mb-3">
+            <div class="form-check">
+              <input type="checkbox" class="form-check-input" name="en_cours" id="en_cours">
+              <label class="form-check-label" for="en_cours">
+                {{_('Poste_Actuel')}}
+              </label>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">{{_('Technologies_Utilisees')}}</label>
+            <input type="text" class="form-control" name="technologies" 
+                   placeholder="{{_('Exemple_Technologies')}}">
+            <div class="invalid-feedback"></div>
+            <small class="form-hint">{{_('Liste_Technologies_Separees')}}</small>
+          </div>
+          <div class="mb-3">
+            <label class="form-label required">{{_('Description')}}</label>
+            <textarea class="form-control" name="description" rows="4" required></textarea>
+            <div class="invalid-feedback"></div>
+            <small class="form-hint">{{_('Description_Role_Responsabilites')}}</small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn me-auto" data-bs-dismiss="modal">{{_('Annuler')}}</button>
+          <button type="button" class="btn btn-primary" id="btn-save-experience">{{_('Enregistrer_Experience')}}</button>
+        </div>
+      </form>
     </div>
+  </div>
 </div>
-  

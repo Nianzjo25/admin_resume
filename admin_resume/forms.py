@@ -12,7 +12,7 @@ class RegistrationForm(UserCreationForm):
         widget=forms.PasswordInput(attrs={
             'class': 'form-control',
             "placeholder": "Password",
-            'pattern': '(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*]).{8,}',
+            'pattern': r'(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*]).{8,}',  # Utilisation de chaîne brute (r'...')
             'title': 'Password must contain at least 8 characters, including uppercase, lowercase letters, numbers and special characters'
         }),
     )
