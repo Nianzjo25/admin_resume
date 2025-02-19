@@ -127,109 +127,108 @@ $(document).ready(function() {
 
       //Bouton d'enregistrement de l'expérience
       $("#btn-save-experience").on('click', function() {
-          let btn_save_experience = $(this);
-          let formulaire = $('#add-experience-form');
-          let href = formulaire.attr('action');
-
-          $.validator.setDefaults({ ignore: [] });
-          
-          // Création d'un FormData pour gérer les fichiers
-          let formData = new FormData();
-          
-          // Récupérer tous les fichiers s'il y en a
-          let certificatFiles = $('#add-experience-form #certificat_file')[0]?.files;
-          let attachmentFiles = $('#add-experience-form #attachment_file')[0]?.files;
-
-          if (formulaire.valid()) {
-              btn_save_experience.attr('disabled', true);
-
-              //demander confirmation
-              let n = noty({
-                  text: gettext('Voulez-vous vraiment créer cette expérience ?'),
-                  type: 'warning',
-                  dismissQueue: true,
-                  layout: 'center',
-                  theme: 'defaultTheme',
-                  buttons: [
-                      {
-                          addClass: 'btn btn-primary', text: gettext('OUI'), onClick: function($noty) {
-                              $noty.close();
-
-                              // Ajouter les fichiers au FormData
-                              if (certificatFiles && certificatFiles.length > 0) {
-                                  formData.append('certificat_file', certificatFiles[0]);
-                              }
-                              
-                              if (attachmentFiles && attachmentFiles.length > 0) {
-                                  formData.append('attachment_file', attachmentFiles[0]);
-                              }
-                              
-                              // Sérialiser les données du formulaire et les ajouter au FormData
-                              let data_serialized = formulaire.serialize();
-                              $.each(data_serialized.split('&'), function(index, elem) {
-                                  let vals = elem.split('=');
-                                  let key = vals[0];
-                                  let valeur = decodeURIComponent(vals[1].replace(/\+/g, ' '));
-                                  formData.append(key, valeur);
-                              });
-
-                              $.ajax({
-                                  type: 'post',
-                                  url: href,
-                                  data: formData,
-                                  processData: false,
-                                  contentType: false,
-                                  success: function(response) {
-                                      if (response.status == 1) {
-                                          // Vider le formulaire
-                                          resetFields('#' + formulaire.attr('id'));
-                                          
-                                          notifySuccess(response.message, function() {
-                                              location.reload();
-                                          });
-                                      } else {
-                                          let errors = JSON.parse(JSON.stringify(response.errors));
-                                          let errors_list_to_display = '';
-                                          for (field in errors) {
-                                              errors_list_to_display += '- ' + ucfirst(field) + ' : ' + errors[field] + '<br/>';
-                                          }
-
-                                          $('#add-experience-modal .alert .message').html(errors_list_to_display);
-                                          $('#add-experience-modal .alert').fadeTo(2000, 500).slideUp(500, function() {
-                                              $(this).slideUp(500);
-                                          }).removeClass('alert-success').addClass('alert-warning');
-                                          
-                                          btn_save_experience.removeAttr('disabled');
-                                      }
-                                  },
-                                  error: function(request, status, error) {
-                                      notifyWarning(gettext("Erreur lors de l'enregistrement"));
-                                      btn_save_experience.removeAttr('disabled');
+        let btn_save_experience = $(this);
+        let formulaire = $('#add-experience-form');
+        let href = formulaire.attr('action');
+    
+        $.validator.setDefaults({ ignore: [] });
+        
+        let formData = new FormData();
+        
+        let certificatFiles = $('#add-experience-form #certificat_file')[0]?.files;
+        let attachmentFiles = $('#add-experience-form #attachment_file')[0]?.files;
+    
+        if (formulaire.valid()) {
+            btn_save_experience.attr('disabled', true);
+    
+            // Créer la notification avec une référence
+            const notification = new Noty({
+                text: gettext('Voulez-vous vraiment créer cette expérience ?'),
+                type: 'warning',
+                layout: 'center',
+                theme: 'custom',
+                timeout: false,
+                buttons: [
+                    Noty.button(gettext('OUI'), 'btn btn-primary', function() {
+                        notification.close();
+                        
+                        // Ajouter les fichiers au FormData
+                        if (certificatFiles && certificatFiles.length > 0) {
+                            formData.append('certificat_file', certificatFiles[0]);
+                        }
+                        
+                        if (attachmentFiles && attachmentFiles.length > 0) {
+                            formData.append('attachment_file', attachmentFiles[0]);
+                        }
+                        
+                        // Sérialiser les données du formulaire
+                        let data_serialized = formulaire.serialize();
+                        $.each(data_serialized.split('&'), function(index, elem) {
+                            let vals = elem.split('=');
+                            let key = vals[0];
+                            let valeur = decodeURIComponent(vals[1].replace(/\+/g, ' '));
+                            formData.append(key, valeur);
+                        });
+    
+                        $.ajax({
+                            type: 'post',
+                            url: href,
+                            data: formData,
+                            processData: false,
+                            contentType: false,
+                            success: function(response) {
+                              if (response.status == 1) {
+                                  resetFields('#' + formulaire.attr('id'));
+                                  notifySuccess(response.message, function() {
+                                    console.log("Rechargement de la page...");
+                                    location.reload();
+                                  });
+                                  setTimeout(function() {
+                                    location.reload();
+                                  }, 500);
+                              } else {
+                                  let errors = JSON.parse(JSON.stringify(response.errors));
+                                  let errors_list_to_display = '';
+                                  for (field in errors) {
+                                      errors_list_to_display += '- ' + ucfirst(field) + ' : ' + errors[field] + '<br/>';
                                   }
-                              });
-                          }
-                      },
-                      {
-                          addClass: 'btn btn-danger', text: gettext('Annuler'), onClick: function($noty) {
-                              $noty.close();
-                              btn_save_experience.removeAttr('disabled');
-                          }
-                      }
-                  ]
-              });
-              //fin demande confirmation
-
-          } else {
-              $('label.error').css({ display: 'none', height: '0px' }).removeClass('error').text('');
-
-              let validator = formulaire.validate();
-              $.each(validator.errorMap, function(index, value) {
-                  console.log('Id: ' + index + ' Message: ' + value);
-              });
-
-              notifyWarning(gettext('Veuillez renseigner tous les champs obligatoires'));
-              btn_save_experience.removeAttr('disabled');
-          }
+                          
+                                  $('#add-experience-modal .alert .message').html(errors_list_to_display);
+                                  $('#add-experience-modal .alert').fadeTo(2000, 500).slideUp(500, function() {
+                                      $(this).slideUp(500);
+                                  }).removeClass('alert-success').addClass('alert-warning');
+                                  
+                                  btn_save_experience.removeAttr('disabled');
+                              }
+                            },
+                          
+                            error: function(request, status, error) {
+                                notifyWarning(gettext("Erreur lors de l'enregistrement"));
+                                btn_save_experience.removeAttr('disabled');
+                            }
+                        });
+                    }),
+                    Noty.button(gettext('Annuler'), 'btn btn-danger', function() {
+                        notification.close();
+                        btn_save_experience.removeAttr('disabled');
+                    })
+                ]
+            });
+    
+            // Afficher la notification
+            notification.show();
+    
+        } else {
+            $('label.error').css({ display: 'none', height: '0px' }).removeClass('error').text('');
+    
+            let validator = formulaire.validate();
+            $.each(validator.errorMap, function(index, value) {
+                console.log('Id: ' + index + ' Message: ' + value);
+            });
+    
+            notifyWarning(gettext('Veuillez renseigner tous les champs obligatoires'));
+            btn_save_experience.removeAttr('disabled');
+        }
       });
 
       // Handle modal closing - reset form
