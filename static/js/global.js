@@ -136,6 +136,64 @@ AppliquerMaskSaisie();
 
 
 var my_noty;//variale global pour pouvoir le fermer de popup de l'extérieur
+
+// Ajouter les styles personnalisés pour Noty
+const notyCustomStyles = `
+    .noty_theme__custom {
+        border-radius: 4px;
+        margin: 10px 0;
+        padding: 0;
+        background-color: white;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        position: relative;
+    }
+
+    .noty_theme__custom::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        border-radius: 4px 0 0 4px;
+    }
+
+    .noty_theme__custom.noty_type__success::before {
+        background-color: #28a745;
+    }
+
+    .noty_theme__custom.noty_type__warning::before {
+        background-color: #ffc107;
+    }
+
+    .noty_theme__custom.noty_type__error::before {
+        background-color: #dc3545;
+    }
+
+    .noty_theme__custom .noty_body {
+        padding: 15px 20px;
+        font-size: 14px;
+        color: #333;
+    }
+
+    .noty_theme__custom .noty_buttons {
+        padding: 10px;
+        border-top: 1px solid #eee;
+        text-align: right;
+    }
+
+    .noty_theme__custom .btn {
+        margin-left: 5px;
+        border-radius: 3px;
+        font-size: 13px;
+    }
+`;
+
+// Ajouter les styles au document
+const styleElement = document.createElement('style');
+styleElement.textContent = notyCustomStyles;
+document.head.appendChild(styleElement);
+
 function notifySuccess(message, fnCallback) {
     if (my_noty) {
         my_noty.close();
@@ -144,12 +202,12 @@ function notifySuccess(message, fnCallback) {
     my_noty = new Noty({
         text: message,
         type: 'success',
-        layout: 'center',
-        theme: 'bootstrap-v4',
-        timeout: false,
-        modal: true,
+        layout: 'topRight',
+        theme: 'custom',
+        timeout: 5000,
+        progressBar: true,
         buttons: [
-            Noty.button('OK', 'btn btn-primary', function () {
+            Noty.button('OK', 'btn btn-success', function () {
                 if (typeof fnCallback === 'function') fnCallback();
                 my_noty.close();
             })
@@ -170,19 +228,18 @@ function notifyWarning(message, fnCallback) {
     my_noty = new Noty({
         text: message,
         type: 'warning',
-        layout: 'center',
-        theme: 'bootstrap-v4',
-        timeout: false,
-        modal: true,
+        layout: 'topRight',
+        theme: 'custom',
+        timeout: 5000,
+        progressBar: true,
         buttons: [
-            Noty.button('OK', 'btn btn-primary', function () {
+            Noty.button('OK', 'btn btn-warning', function () {
                 if (typeof fnCallback === 'function') fnCallback();
                 my_noty.close();
             })
         ]
     }).show();
 }
-
 
 function notifyError(message, fnCallback) {
     if (my_noty) {
@@ -192,12 +249,12 @@ function notifyError(message, fnCallback) {
     my_noty = new Noty({
         text: message,
         type: 'error',
-        layout: 'center',
-        theme: 'bootstrap-v4',
-        timeout: false,
-        modal: true,
+        layout: 'topRight',
+        theme: 'custom',
+        timeout: 5000,
+        progressBar: true,
         buttons: [
-            Noty.button('OK', 'btn btn-primary', function () {
+            Noty.button('OK', 'btn btn-danger', function () {
                 if (typeof fnCallback === 'function') fnCallback();
                 my_noty.close();
             })
