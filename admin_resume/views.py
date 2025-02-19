@@ -35,8 +35,10 @@ class ExperienceView(LoginRequiredMixin, TemplateView):
     def get(self, request):
         """Affiche la page principale des expériences"""
         experiences = Experience.objects.filter(
+            Q(status=ExperienceStatus.EN_COURS) | Q(status=ExperienceStatus.TERMINER),
             user=request.user.userprofile
         )
+
         context = {
             'page_title': 'Expériences professionnelles',
             'page_subtitle': 'Gérez votre parcours professionnel',
@@ -57,7 +59,8 @@ def experiences_datatables(request):
         search = request.GET.get('search[value]', '')
         
         queryset = Experience.objects.filter(
-            user=request.user.userprofile
+            user=request.user.userprofile,
+            status=ExperienceStatus.EN_COURS
         )
         
         # Map column index to corresponding model field for sorting
@@ -226,22 +229,22 @@ def update_experience(request, experience_id):
 
 @login_required
 @transaction.atomic
-def delete_experience(request):
+def delete_experience(request, experience_id):
+    # print('@ id de l\'experience:', experience_id)
     if request.method == "POST":
-        experience_id = request.POST.get('experience_id')
-        experience = Experience.objects.get(
-            id=experience_id,
-            user=request.user.userprofile,
-            status='active'
-        )
-        experience.status = 'deleted'
-        experience.save()
+        experience = Experience.objects.get(id=experience_id)
         
-        response = {
-            'statut': 1,
-            'message': _("Experience supprimée avec succès !"),
-        }
-        return JsonResponse(response)
+        # print('@ details de l\'experience:', experience)
+
+        if not experience:
+            return JsonResponse({'statut': 0, 'message': _("Expérience non trouvée.")}, status=404)
+
+        experience.status = ExperienceStatus.SUPPRIMER  # Correction de la virgule
+        experience.save()
+
+        return JsonResponse({'statut': 1, 'message': _("Expérience supprimée avec succès !")})
+    
+    return JsonResponse({'statut': 0, 'message': _("Requête invalide.")}, status=400)
     
 # Authentication
 class RegistrationView(CreateView):

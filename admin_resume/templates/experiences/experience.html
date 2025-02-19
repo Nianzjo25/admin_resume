@@ -100,7 +100,6 @@
   <!-- Modal Forms -->
   {% include 'experiences/modals/add_experience.html' %}
   {% include 'experiences/modals/edit_experience.html' %}
-  {% include 'experiences/modals/delete_experience.html' %}
 {% endblock content %}
 
 {% block extrajs %}
@@ -238,6 +237,55 @@ $(document).ready(function() {
           $('#add-experience-form .is-invalid').removeClass('is-invalid');
           $('#add-experience-form .invalid-feedback').text('');
       });
+
+      //************* SUPPRESSION D'EXPERIENCE ***************//
+      $(".delete-experience-btn").on('click', function() {
+        let experienceId = $(this).data('id');
+        let btn_delete_experience = $(this);
+
+        const deleteNotification = new Noty({
+            text: gettext('Voulez-vous vraiment supprimer cette expérience ?'),
+            type: 'error',
+            layout: 'center',
+            theme: 'custom',
+            timeout: false,
+            buttons: [
+                Noty.button(gettext('OUI'), 'btn btn-danger', function() {
+                    deleteNotification.close();
+                    btn_delete_experience.attr('disabled', true);
+
+                    $.ajax({
+                        type: "POST",  // RESTE EN POST (SI LA VUE L'ACCEPTE)
+                        url: `/delete_experience/${experienceId}/`, // ✅ Correction de l'URL avec l'ID
+                        data: {
+                            'csrfmiddlewaretoken': '{{ csrf_token }}' // ✅ Plus besoin d'envoyer l'ID ici
+                        },
+                        success: function(response) {
+                            if (response.status == 1) {
+                                notifySuccess(response.message, function() {
+                                    location.reload();
+                                });
+                            } else {
+                                notifyWarning(response.message);
+                                btn_delete_experience.removeAttr('disabled');
+                            }
+                        },
+                        error: function() {
+                            notifyError(gettext("Erreur lors de la suppression"));
+                            btn_delete_experience.removeAttr('disabled');
+                        }
+                    });
+                }),
+                Noty.button(gettext('Annuler'), 'btn btn-secondary', function() {
+                    deleteNotification.close();
+                })
+            ]
+        });
+
+        deleteNotification.show();
+      });
+
+
 
       // Handle the "Current Position" checkbox to toggle date_fin field
       $('#en_cours').on('change', function() {
