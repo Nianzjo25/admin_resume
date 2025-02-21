@@ -27,8 +27,6 @@ def index(request):
     }
     return render(request, 'pages/index.html', context)
 
-
-
 class ExperienceView(LoginRequiredMixin, TemplateView):
     template_name = 'experiences/experience.html'
     
@@ -38,11 +36,14 @@ class ExperienceView(LoginRequiredMixin, TemplateView):
             Q(status=ExperienceStatus.EN_COURS) | Q(status=ExperienceStatus.TERMINER),
             user=request.user.userprofile
         )
+        
+        first_experience = experiences.first()
 
         context = {
             'page_title': 'Expériences professionnelles',
             'page_subtitle': 'Gérez votre parcours professionnel',
             'experiences': experiences,
+            'first_experience': first_experience,
             'segment': 'experience'
         }
         return render(request, self.template_name, context)
@@ -131,6 +132,7 @@ def experiences_datatables(request):
 def add_experience(request):
     if request.method == 'POST':
         try:
+            # Récupération des données du formulaire
             form_data = {
                 'name': request.POST.get('name', '').strip(),
                 'fonction': request.POST.get('fonction', '').strip(),
@@ -139,38 +141,32 @@ def add_experience(request):
                 'technologies': request.POST.get('technologies', '').strip(),
                 'description': request.POST.get('description', '').strip(),
                 'date_debut': request.POST.get('date_debut'),
+                'date_fin': None,
+                'en_cours': request.POST.get('en_cours') == 'on',
                 'simultaneous_work': request.POST.get('simultaneous_work') == 'true'
             }
-
+            
             # Validation des champs requis
-            required_fields = ['name', 'fonction', 'entreprise', 'location', 'date_debut', 'description']
+            required_fields = ['name', 'fonction', 'entreprise', 'date_debut', 'description']
             errors = {}
             
             for field in required_fields:
                 if not form_data.get(field):
                     errors[field] = _("Ce champ est obligatoire")
-
+            
             if errors:
                 return JsonResponse({
-                    'status': False,
+                    'status': 0,
                     'message': _("Veuillez corriger les erreurs suivantes"),
                     'errors': errors
                 })
-
-            # Si ce n'est pas un travail simultané, mettre à jour l'expérience précédente
-            if not form_data['simultaneous_work']:
-                previous_active = Experience.objects.filter(
-                    user=request.user.userprofile,
-                    status=ExperienceStatus.EN_COURS,
-                ).first()
-                
-                if previous_active:
-                    previous_active.status = ExperienceStatus.TERMINER
-                    previous_active.date_fin = form_data['date_debut']
-                    previous_active.save()
-
-            # Création de l'expérience
-            experience = Experience.objects.create(
+            
+            # Gestion de la date de fin en fonction de "Poste actuel"
+            if not form_data['en_cours'] and request.POST.get('date_fin'):
+                form_data['date_fin'] = request.POST.get('date_fin')
+            
+            # Création de l'expérience avec toutes les données validées
+            experience = Experience(
                 user=request.user.userprofile,
                 name=form_data['name'],
                 fonction=form_data['fonction'],
@@ -179,54 +175,106 @@ def add_experience(request):
                 technologies=form_data['technologies'],
                 description=form_data['description'],
                 date_debut=form_data['date_debut'],
+                date_fin=form_data['date_fin'],
                 status=ExperienceStatus.EN_COURS,
             )
-
+            
+            # Ajout de l'attribut pour le travail simultané si nécessaire
+            if form_data['simultaneous_work']:
+                experience.simultaneous_work = True
+                
+            experience.save()
+            
             return JsonResponse({
                 'status': 1,
                 'message': _("Expérience ajoutée avec succès !"),
                 'redirect': reverse('experience')
             })
-
+            
         except Exception as e:
             return JsonResponse({
-                'status': 1,
+                'status': 0,
                 'message': str(e)
-            })
-
+            }, status=400)
+            
 @login_required
+def edit_experience(request, experience_id):
+    """View for fetching experience data to display in edit modal"""
+    if request.method == 'GET':
+        try:
+            # Use filter() instead of get_object_or_404
+            experience = Experience.objects.filter(id=experience_id).first()
+            if not experience:
+                return JsonResponse({'status': 0, 'message': _("Experience not found")})
+                
+            data = {
+                'id': experience.id,
+                'entreprise': experience.entreprise,
+                'fonction': experience.fonction,
+                'date_debut': experience.date_debut.strftime('%Y-%m-%d') if experience.date_debut else None,
+                'date_fin': experience.date_fin.strftime('%Y-%m-%d') if experience.date_fin else None,
+                'location': experience.location,
+                'technologies': experience.technologies,
+                'name': experience.name,
+                'description': experience.description
+            }
+            return JsonResponse({'status': 1, 'data': data})
+        except Exception as e:
+            return JsonResponse({'status': 0, 'message': str(e)})
+    return JsonResponse({'status': 0, 'message': _('Method not allowed')})
+
 @transaction.atomic
 def update_experience(request, experience_id):
-    experience = Experience.objects.get(id=experience_id, user=request.user.userprofile)
-    
+    """View for processing the experience update"""
     if request.method == 'POST':
-        # Mise à jour des données
-        experience.name = request.POST.get('name', '').strip()
-        experience.fonction = request.POST.get('fonction', '').strip()
-        experience.entreprise = request.POST.get('entreprise', '').strip()
-        experience.location = request.POST.get('location', '').strip()
-        experience.technologies = request.POST.get('technologies', '').strip()
-        experience.description = request.POST.get('description', '').strip()
-        experience.date_debut = request.POST.get('date_debut')
-        experience.date_fin = request.POST.get('date_fin')
-        experience.save()
+        try:
+            # Use filter() instead of get_object_or_404
+            experience = Experience.objects.filter(id=experience_id).first()
+            if not experience:
+                return JsonResponse({'status': 0, 'message': _("Experience not found")})
+            
+            # Update experience fields
+            experience.entreprise = request.POST.get('entreprise')
+            experience.fonction = request.POST.get('fonction')
+            experience.date_debut = request.POST.get('date_debut')
+            
+            # Handle the "current position" checkbox
+            if request.POST.get('en_cours') == 'on':
+                experience.date_fin = None
+            else:
+                experience.date_fin = request.POST.get('date_fin')
+                
+            experience.location = request.POST.get('location')
+            experience.technologies = request.POST.get('technologies')
+            experience.name = request.POST.get('name')
+            experience.description = request.POST.get('description')
+            
+            # Validate data before saving
+            errors = {}
+            if not experience.entreprise:
+                errors['entreprise'] = _("Ce champ est obligatoire")
+            if not experience.fonction:
+                errors['fonction'] = _("Ce champ est obligatoire")
+            if not experience.date_debut:
+                errors['date_debut'] = _("Ce champ est obligatoire")
+            if not experience.name:
+                errors['name'] = _("Ce champ est obligatoire")
+            if not experience.description:
+                errors['description'] = _("Ce champ est obligatoire")
+                
+            if errors:
+                return JsonResponse({'status': 0, 'errors': errors})
+                
+            experience.save()
+            return JsonResponse({
+                'status': 1,
+                'message': _("L'expérience a été mise à jour avec succès")
+            })
+        except Exception as e:
+            return JsonResponse({'status': 0, 'message': str(e)})
+    return JsonResponse({'status': 0, 'message': _('Method not allowed')})
 
-        response = {
-            'statut': 1,
-            'message': _("Modification effectuée avec succès !"),
-            'data': {
-                'id': experience.pk,
-                'numero': experience.numero,
-                'name': experience.name,
-                'fonction': experience.fonction
-            }
-        }
-
-        return JsonResponse(response)
-    else:
-        return render(request, 'experiences/modal_edit_experience.html',
-                     {'experience': experience})
-
+   
 @login_required
 @transaction.atomic
 def delete_experience(request, experience_id):

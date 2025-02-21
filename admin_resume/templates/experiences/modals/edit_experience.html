@@ -1,64 +1,93 @@
-
-{# Modal Edit Experience #}
 <div class="modal modal-blur fade" id="edit-experience-modal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Edit Experience</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <form id="edit-experience-form">
-          <input type="hidden" name="experience_id" id="edit_experience_id">
-          <div class="modal-body">
-            <div class="row mb-3">
-              <div class="col-lg-6">
-                <label class="form-label required">Name</label>
-                <input type="text" class="form-control" name="name" id="edit_name" required>
-              </div>
-              <div class="col-lg-6">
-                <label class="form-label required">Job Title</label>
-                <input type="text" class="form-control" name="fonction" id="edit_fonction" required>
-              </div>
-            </div>
-            <div class="row mb-3">
-              <div class="col-lg-6">
-                <label class="form-label required">Company</label>
-                <input type="text" class="form-control" name="entreprise" id="edit_entreprise" required>
-              </div>
-              <div class="col-lg-6">
-                <label class="form-label required">Location</label>
-                <input type="text" class="form-control" name="location" id="edit_location" required>
-              </div>
-            </div>
-            <div class="row mb-3">
-              <div class="col-lg-6">
-                <label class="form-label required">Start Date</label>
-                <input type="date" class="form-control" name="date_debut" id="edit_date_debut" required>
-              </div>
-              <div class="col-lg-6">
-                <label class="form-label">End Date</label>
-                <input type="date" class="form-control" name="date_fin" id="edit_date_fin">
-                <small class="form-hint">Leave empty if this is your current position</small>
-              </div>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Technologies Used</label>
-              <input type="text" class="form-control" name="technologies" id="edit_technologies"
-                     placeholder="e.g. Python, Django, JavaScript, React">
-              <small class="form-hint">Comma separated list of technologies</small>
-            </div>
-            <div class="mb-3">
-              <label class="form-label required">Description</label>
-              <textarea class="form-control" name="description" id="edit_description" rows="4" required></textarea>
-              <small class="form-hint">Describe your role, responsibilities and achievements</small>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn me-auto" data-bs-dismiss="modal">Cancel</button>
-            <button type="submit" class="btn btn-primary">Update Experience</button>
-          </div>
-        </form>
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{{ _('MODIFIER_EXPERIENCE_PROFESSIONNELLE') }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
+      <form id="edit-experience-form" action="{% url 'update_experience' 0 %}" method="post">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="alert" role="alert" style="display: none;">
+            <span class="message"></span>
+          </div>
+          <input type="hidden" id="edit-experience-id" name="experience_id" value="{{ experience.id }}">
+          <!-- Entreprise / Organisation -->
+          <div class="row mb-3">
+            <div class="col-lg-12">
+              <label class="form-label required">{{ _('Entreprise_Organisation') }}</label>
+              <input type="text" class="form-control" name="entreprise" id="edit-entreprise" value="{{ experience.entreprise }}" required>
+              <div class="invalid-feedback"></div>
+            </div>
+          </div>
+          <!-- Poste occupé -->
+          <div class="row mb-3">
+            <div class="col-lg-12">
+              <label class="form-label required">{{ _('Poste_Occupe') }}</label>
+              <input type="text" class="form-control" name="fonction" id="edit-fonction" value="{{ experience.fonction }}" required>
+              <div class="invalid-feedback"></div>
+            </div>
+          </div>
+          <!-- Durée - Dates de début et fin -->
+          <div class="row mb-3">
+            <div class="col-lg-6">
+              <label class="form-label required">{{ _('Date_Debut') }}</label>
+              <input type="date" class="form-control" name="date_debut" id="edit-date-debut" value="{{ experience.date_debut|date:'Y-m-d' }}" required>
+              <div class="invalid-feedback"></div>
+            </div>
+            <div class="col-lg-6">
+              <label class="form-label">{{ _('Date_Fin') }}</label>
+              <input type="date" class="form-control" name="date_fin" id="edit-date-fin" value="{{ experience.date_fin|date:'Y-m-d' }}" {% if not experience.date_fin %}disabled{% endif %}>
+              <div class="invalid-feedback"></div>
+            </div>
+          </div>
+          <div class="mb-3">
+            <div class="form-check">
+              <input type="checkbox" class="form-check-input" name="en_cours" id="edit-en-cours" {% if not experience.date_fin %}checked{% endif %}>
+              <label class="form-check-label" for="edit-en-cours">
+                {{ _('Poste_Actuel') }}
+              </label>
+            </div>
+          </div>
+          <!-- Lieu -->
+          <div class="row mb-3">
+            <div class="col-lg-12">
+              <label class="form-label">{{ _('Localisation') }}</label>
+              <input type="text" class="form-control" name="location" id="edit-location" value="{{ experience.location }}">
+              <div class="invalid-feedback"></div>
+              <small class="form-hint">{{ _('Ville_Pays_Optionnel') }}</small>
+            </div>
+          </div>
+          <!-- Technologies utilisées -->
+          <div class="mb-3">
+            <label class="form-label">{{ _('Technologies_Utilisees') }}</label>
+            <input type="text" class="form-control" name="technologies" id="edit-technologies" value="{{ experience.technologies }}"
+                   placeholder="{{ _('Exemple_Technologies') }}">
+            <div class="invalid-feedback"></div>
+            <small class="form-hint">{{ _('Liste_Technologies_Separees') }}</small>
+          </div>
+          <!-- Nom de l'expérience / Projet spécifique -->
+          <div class="row mb-3">
+            <div class="col-lg-12">
+              <label class="form-label required">{{ _('Nom_Projet_Experience') }}</label>
+              <input type="text" class="form-control" name="name" id="edit-name" value="{{ experience.name }}" required>
+              <div class="invalid-feedback"></div>
+              <small class="form-hint">{{ _('Titre_Projet_Specifique') }}</small>
+            </div>
+          </div>
+          <!-- Missions et réalisations -->
+          <div class="mb-3">
+            <label class="form-label required">{{ _('Missions_Realisations') }}</label>
+            <textarea class="form-control" name="description" id="edit-description" rows="5" required>{{ experience.description }}</textarea>
+            <div class="invalid-feedback"></div>
+            <small class="form-hint">{{ _('Description_Precise_Impactante') }}</small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn me-auto" data-bs-dismiss="modal">{{ _('Annuler') }}</button>
+          <button type="button" class="btn btn-primary" id="btn-update-experience">{{ _('Mettre_A_Jour') }}</button>
+        </div>
+      </form>
     </div>
+  </div>
 </div>
-  

@@ -2,7 +2,7 @@
   <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">{{_('AJOUTER_EXPERIENCE_PROFESSIONNELLE')}}</h5>
+        <h5 class="modal-title">{{ _('AJOUTER_EXPERIENCE_PROFESSIONNELLE') }}</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <form id="add-experience-form" action="{% url 'add_experience' %}" method="post">
@@ -11,38 +11,31 @@
           <div class="alert" role="alert" style="display: none;">
             <span class="message"></span>
           </div>
+          <!-- Entreprise / Organisation -->
           <div class="row mb-3">
-            <div class="col-lg-6">
-              <label class="form-label required">{{_('Nom')}}</label>
-              <input type="text" class="form-control" name="name" required>
+            <div class="col-lg-12">
+              <label class="form-label required">{{ _('Entreprise_Organisation') }}</label>
+              <input type="text" class="form-control" name="entreprise" required>
               <div class="invalid-feedback"></div>
             </div>
-            <div class="col-lg-6">
-              <label class="form-label required">{{_('Titre_Poste')}}</label>
+          </div>
+          <!-- Poste occupé -->
+          <div class="row mb-3">
+            <div class="col-lg-12">
+              <label class="form-label required">{{ _('Poste_Occupe') }}</label>
               <input type="text" class="form-control" name="fonction" required>
               <div class="invalid-feedback"></div>
             </div>
           </div>
+          <!-- Durée - Dates de début et fin -->
           <div class="row mb-3">
             <div class="col-lg-6">
-              <label class="form-label required">{{_('Entreprise')}}</label>
-              <input type="text" class="form-control" name="entreprise" required>
-              <div class="invalid-feedback"></div>
-            </div>
-            <div class="col-lg-6">
-              <label class="form-label required">{{_('Localisation')}}</label>
-              <input type="text" class="form-control" name="location" required>
-              <div class="invalid-feedback"></div>
-            </div>
-          </div>
-          <div class="row mb-3">
-            <div class="col-lg-6">
-              <label class="form-label required">{{_('Date_Debut')}}</label>
+              <label class="form-label required">{{ _('Date_Debut') }}</label>
               <input type="date" class="form-control" name="date_debut" required>
               <div class="invalid-feedback"></div>
             </div>
             <div class="col-lg-6">
-              <label class="form-label">{{_('Date_Fin')}}</label>
+              <label class="form-label">{{ _('Date_Fin') }}</label>
               <input type="date" class="form-control" name="date_fin" id="date_fin">
               <div class="invalid-feedback"></div>
             </div>
@@ -51,27 +44,47 @@
             <div class="form-check">
               <input type="checkbox" class="form-check-input" name="en_cours" id="en_cours">
               <label class="form-check-label" for="en_cours">
-                {{_('Poste_Actuel')}}
+                {{ _('Poste_Actuel') }}
               </label>
             </div>
           </div>
-          <div class="mb-3">
-            <label class="form-label">{{_('Technologies_Utilisees')}}</label>
-            <input type="text" class="form-control" name="technologies" 
-                   placeholder="{{_('Exemple_Technologies')}}">
-            <div class="invalid-feedback"></div>
-            <small class="form-hint">{{_('Liste_Technologies_Separees')}}</small>
+          <!-- Lieu -->
+          <div class="row mb-3">
+            <div class="col-lg-12">
+              <label class="form-label">{{ _('Localisation') }}</label>
+              <input type="text" class="form-control" name="location">
+              <div class="invalid-feedback"></div>
+              <small class="form-hint">{{ _('Ville_Pays_Optionnel') }}</small>
+            </div>
           </div>
+          <!-- Technologies utilisées -->
           <div class="mb-3">
-            <label class="form-label required">{{_('Description')}}</label>
-            <textarea class="form-control" name="description" rows="4" required></textarea>
+            <label class="form-label">{{ _('Technologies_Utilisees') }}</label>
+            <input type="text" class="form-control" name="technologies" 
+                   placeholder="{{ _('Exemple_Technologies') }}">
             <div class="invalid-feedback"></div>
-            <small class="form-hint">{{_('Description_Role_Responsabilites')}}</small>
+            <small class="form-hint">{{ _('Liste_Technologies_Separees') }}</small>
+          </div>
+          <!-- Nom de l'expérience / Projet spécifique -->
+          <div class="row mb-3">
+            <div class="col-lg-12">
+              <label class="form-label required">{{ _('Nom_Projet_Experience') }}</label>
+              <input type="text" class="form-control" name="name" required>
+              <div class="invalid-feedback"></div>
+              <small class="form-hint">{{ _('Titre_Projet_Specifique') }}</small>
+            </div>
+          </div>
+          <!-- Missions et réalisations -->
+          <div class="mb-3">
+            <label class="form-label required">{{ _('Missions_Realisations') }}</label>
+            <textarea class="form-control" name="description" rows="5" required></textarea>
+            <div class="invalid-feedback"></div>
+            <small class="form-hint">{{ _('Description_Precise_Impactante') }}</small>
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn me-auto" data-bs-dismiss="modal">{{_('Annuler')}}</button>
-          <button type="button" class="btn btn-primary" id="btn-save-experience">{{_('Enregistrer_Experience')}}</button>
+          <button type="button" class="btn me-auto" data-bs-dismiss="modal">{{ _('Annuler') }}</button>
+          <button type="button" class="btn btn-primary" id="btn-save-experience">{{ _('Enregistrer_Experience') }}</button>
         </div>
       </form>
     </div>

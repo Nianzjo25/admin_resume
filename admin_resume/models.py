@@ -68,15 +68,15 @@ class Experience(models.Model):
     location = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
+    
     class Meta:
         db_table = "experience"
         verbose_name = _("Experience")
         verbose_name_plural = _("Experience")
         ordering = ['-date_debut']
-
+        
     def save(self, *args, **kwargs):
-        if not self.pk and self.status == ExperienceStatus.EN_COURS:
+        if not self.pk and self.status == ExperienceStatus.EN_COURS and not getattr(self, 'simultaneous_work', False):
             previous_active = Experience.objects.filter(
                 user=self.user,
                 status=ExperienceStatus.EN_COURS
@@ -86,7 +86,6 @@ class Experience(models.Model):
                 previous_active.status = ExperienceStatus.TERMINER
                 previous_active.date_fin = self.date_debut
                 previous_active.save()
-
         super().save(*args, **kwargs)
 
 class Education(models.Model):

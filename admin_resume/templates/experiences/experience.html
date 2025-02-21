@@ -1,8 +1,10 @@
+<!-- experiences/index.html -->
 {% extends 'layouts/base.html' %}
 {% load static %}
+{% load i18n %}
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noty/3.2.0/noty.min.css" />
-{% block title %}Experience - {% endblock title %}
+{% block title %}{{ _("Experience") }} - {% endblock title %}
 
 {% block content %}
   <div class="page-wrapper">
@@ -13,19 +15,19 @@
             <span class="avatar avatar-lg rounded" style="background-image: url({% static 'static/avatars/003m.jpg' %})"></span>
           </div>
           <div class="col">
-            <h1 class="fw-bold">Professional Experience</h1>
-            <div class="my-2">Career history and professional achievements</div>
+            <h1 class="fw-bold">{{ _("Professional Experience") }}</h1>
+            <div class="my-2">{{ _("Career history and professional achievements") }}</div>
           </div>
           <div class="col-auto ms-auto">
             <div class="btn-list">
-              <span id="btn-add-experience" class="btn btn-primary">
+              <span id="btn-add-experience" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#add-experience-modal">
                 <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
                     <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                     <path d="M12 5l0 14" />
                     <path d="M5 12l14 0" />
                 </svg>
-                Add Experience
-            </span>
+                {{ _("Add Experience") }}
+              </span>
             </div>
           </div>
         </div>
@@ -51,7 +53,7 @@
                           {% if exp.date_fin %}
                             {{ exp.date_fin|date:"F Y" }}
                           {% else %}
-                            Present
+                            {{ _("Present") }}
                           {% endif %}
                         </div>
                         <h4>{{ exp.fonction }}</h4>
@@ -62,21 +64,27 @@
                         <div class="mt-2">
                           {% if exp.technologies %}
                           <div class="mb-2">
-                            <strong>Technologies:</strong> {{ exp.technologies }}
+                            <strong>{{ _("Technologies") }}:</strong> {{ exp.technologies }}
                           </div>
                           {% endif %}
                           {% if exp.location %}
                           <div>
-                            <strong>Location:</strong> {{ exp.location }}
+                            <strong>{{ _("Location") }}:</strong> {{ exp.location }}
                           </div>
                           {% endif %}
                         </div>
                         <div class="btn-list mt-3">
-                          <button class="btn btn-sm btn-primary edit-experience-btn" data-id="{{ exp.id }}">
-                            Edit
+                          <button class="btn btn-sm btn-primary edit-experience-btn" 
+                                  data-id="{{ exp.id }}" 
+                                  data-bs-toggle="modal" 
+                                  data-bs-target="#edit-experience-modal"
+                                  data-href="{% url 'edit_experience' exp.id %}">
+                            {{ _("Edit") }}
                           </button>
-                          <button class="btn btn-sm btn-danger delete-experience-btn" data-id="{{ exp.id }}">
-                            Delete
+                          <button class="btn btn-sm btn-danger delete-experience-btn" 
+                                  data-id="{{ exp.id }}"
+                                  data-href="{% url 'delete_experience' exp.id %}">
+                            {{ _("Delete") }}
                           </button>
                         </div>
                       </div>
@@ -84,7 +92,7 @@
                   </li>
                   {% empty %}
                   <li class="text-center text-muted py-5">
-                    No experience entries yet. Click "Add Experience" to get started.
+                    {{ _("No experience entries yet. Click 'Add Experience' to get started.") }}
                   </li>
                   {% endfor %}
                 </ul>
@@ -103,235 +111,5 @@
 {% endblock content %}
 
 {% block extrajs %}
-<script>
-
-  // Experience handling code
-$(document).ready(function() {
-  // Add jQuery validate plugin if it doesn't exist
-  if (typeof $.validator === 'undefined') {
-      // Load jQuery validate from CDN
-      $.getScript('https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js', function() {
-          setupFormValidation();
-      });
-  } else {
-      setupFormValidation();
-  }
-
-  function setupFormValidation() {
-      //************* AJOUT D'EXPERIENCE ***************//
-      $("#btn-add-experience").on('click', function() {
-          $('#add-experience-modal').modal('show');
-          window.AppliquerMaskSaisie();
-      });
-
-      //Bouton d'enregistrement de l'expérience
-      $("#btn-save-experience").on('click', function() {
-        let btn_save_experience = $(this);
-        let formulaire = $('#add-experience-form');
-        let href = formulaire.attr('action');
-    
-        $.validator.setDefaults({ ignore: [] });
-        
-        let formData = new FormData();
-        
-        let certificatFiles = $('#add-experience-form #certificat_file')[0]?.files;
-        let attachmentFiles = $('#add-experience-form #attachment_file')[0]?.files;
-    
-        if (formulaire.valid()) {
-            btn_save_experience.attr('disabled', true);
-    
-            // Créer la notification avec une référence
-            const notification = new Noty({
-                text: gettext('Voulez-vous vraiment créer cette expérience ?'),
-                type: 'warning',
-                layout: 'center',
-                theme: 'custom',
-                timeout: false,
-                buttons: [
-                    Noty.button(gettext('OUI'), 'btn btn-primary', function() {
-                        notification.close();
-                        
-                        // Ajouter les fichiers au FormData
-                        if (certificatFiles && certificatFiles.length > 0) {
-                            formData.append('certificat_file', certificatFiles[0]);
-                        }
-                        
-                        if (attachmentFiles && attachmentFiles.length > 0) {
-                            formData.append('attachment_file', attachmentFiles[0]);
-                        }
-                        
-                        // Sérialiser les données du formulaire
-                        let data_serialized = formulaire.serialize();
-                        $.each(data_serialized.split('&'), function(index, elem) {
-                            let vals = elem.split('=');
-                            let key = vals[0];
-                            let valeur = decodeURIComponent(vals[1].replace(/\+/g, ' '));
-                            formData.append(key, valeur);
-                        });
-    
-                        $.ajax({
-                            type: 'post',
-                            url: href,
-                            data: formData,
-                            processData: false,
-                            contentType: false,
-                            success: function(response) {
-                              if (response.status == 1) {
-                                  resetFields('#' + formulaire.attr('id'));
-                                  notifySuccess(response.message, function() {
-                                    console.log("Rechargement de la page...");
-                                    location.reload();
-                                  });
-                                  setTimeout(function() {
-                                    location.reload();
-                                  }, 500);
-                              } else {
-                                  let errors = JSON.parse(JSON.stringify(response.errors));
-                                  let errors_list_to_display = '';
-                                  for (field in errors) {
-                                      errors_list_to_display += '- ' + ucfirst(field) + ' : ' + errors[field] + '<br/>';
-                                  }
-                          
-                                  $('#add-experience-modal .alert .message').html(errors_list_to_display);
-                                  $('#add-experience-modal .alert').fadeTo(2000, 500).slideUp(500, function() {
-                                      $(this).slideUp(500);
-                                  }).removeClass('alert-success').addClass('alert-warning');
-                                  
-                                  btn_save_experience.removeAttr('disabled');
-                              }
-                            },
-                          
-                            error: function(request, status, error) {
-                                notifyWarning(gettext("Erreur lors de l'enregistrement"));
-                                btn_save_experience.removeAttr('disabled');
-                            }
-                        });
-                    }),
-                    Noty.button(gettext('Annuler'), 'btn btn-danger', function() {
-                        notification.close();
-                        btn_save_experience.removeAttr('disabled');
-                    })
-                ]
-            });
-    
-            // Afficher la notification
-            notification.show();
-    
-        } else {
-            $('label.error').css({ display: 'none', height: '0px' }).removeClass('error').text('');
-    
-            let validator = formulaire.validate();
-            $.each(validator.errorMap, function(index, value) {
-                console.log('Id: ' + index + ' Message: ' + value);
-            });
-    
-            notifyWarning(gettext('Veuillez renseigner tous les champs obligatoires'));
-            btn_save_experience.removeAttr('disabled');
-        }
-      });
-
-      // Handle modal closing - reset form
-      $('#add-experience-modal').on('hidden.bs.modal', function() {
-          resetFields('#add-experience-form');
-          $('#add-experience-form .alert').hide();
-          $('#add-experience-form .is-invalid').removeClass('is-invalid');
-          $('#add-experience-form .invalid-feedback').text('');
-      });
-
-      //************* SUPPRESSION D'EXPERIENCE ***************//
-      $(".delete-experience-btn").on('click', function() {
-        let experienceId = $(this).data('id');
-        let btn_delete_experience = $(this);
-
-        const deleteNotification = new Noty({
-            text: gettext('Voulez-vous vraiment supprimer cette expérience ?'),
-            type: 'error',
-            layout: 'center',
-            theme: 'custom',
-            timeout: false,
-            buttons: [
-                Noty.button(gettext('OUI'), 'btn btn-danger', function() {
-                    deleteNotification.close();
-                    btn_delete_experience.attr('disabled', true);
-
-                    $.ajax({
-                        type: "POST",  // RESTE EN POST (SI LA VUE L'ACCEPTE)
-                        url: `/delete_experience/${experienceId}/`, // ✅ Correction de l'URL avec l'ID
-                        data: {
-                            'csrfmiddlewaretoken': '{{ csrf_token }}' // ✅ Plus besoin d'envoyer l'ID ici
-                        },
-                        success: function(response) {
-                            if (response.status == 1) {
-                                notifySuccess(response.message, function() {
-                                    location.reload();
-                                });
-                            } else {
-                                notifyWarning(response.message);
-                                btn_delete_experience.removeAttr('disabled');
-                            }
-                        },
-                        error: function() {
-                            notifyError(gettext("Erreur lors de la suppression"));
-                            btn_delete_experience.removeAttr('disabled');
-                        }
-                    });
-                }),
-                Noty.button(gettext('Annuler'), 'btn btn-secondary', function() {
-                    deleteNotification.close();
-                })
-            ]
-        });
-
-        deleteNotification.show();
-      });
-
-
-
-      // Handle the "Current Position" checkbox to toggle date_fin field
-      $('#en_cours').on('change', function() {
-          if ($(this).is(':checked')) {
-              $('#date_fin').prop('disabled', true).val('');
-              $('<input>').attr({
-                  type: 'hidden',
-                  name: 'simultaneous_work',
-                  value: 'true'
-              }).appendTo('#add-experience-form');
-          } else {
-              $('#date_fin').prop('disabled', false);
-              $('#add-experience-form input[name="simultaneous_work"]').remove();
-          }
-      });
-
-      // Validation using jQuery Validate plugin
-      $('#add-experience-form').validate({
-          errorPlacement: function(error, element) {
-              element.siblings('.invalid-feedback').text(error.text());
-          },
-          highlight: function(element) {
-              $(element).addClass('is-invalid');
-          },
-          unhighlight: function(element) {
-              $(element).removeClass('is-invalid');
-          },
-          rules: {
-              name: "required",
-              fonction: "required",
-              entreprise: "required",
-              location: "required",
-              date_debut: "required",
-              description: "required"
-          },
-          messages: {
-              name: gettext("Ce champ est obligatoire"),
-              fonction: gettext("Ce champ est obligatoire"),
-              entreprise: gettext("Ce champ est obligatoire"),
-              location: gettext("Ce champ est obligatoire"),
-              date_debut: gettext("Ce champ est obligatoire"),
-              description: gettext("Ce champ est obligatoire")
-          }
-      });
-  }
-});
-
-</script>
+<script></script>
 {% endblock %}
