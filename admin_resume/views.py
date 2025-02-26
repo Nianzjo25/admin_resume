@@ -344,7 +344,10 @@ class EducationViews(LoginRequiredMixin, TemplateView):
     template_name = 'education/education.html'
     
     def get(self, request):
-        education_list = Education.objects.filter(user=request.user.userprofile).order_by('-date_debut')
+        education_list = Education.objects.filter(
+            Q(status=EducationStatus.EN_COURS) | Q(status=EducationStatus.TERMINER),
+            user=request.user.userprofile).order_by('-date_debut')
+        
         status_choices = EducationStatus.choices
         
         context = {
@@ -511,14 +514,20 @@ def edit_education(request, education_id):
 @login_required
 @transaction.atomic
 def delete_education(request, education_id):
-    education = get_object_or_404(Education, id=education_id, user=request.user.userprofile)
-    if request.method == 'POST':
-        try:
-            education.delete()
-            return JsonResponse({'status': 'success'})
-        except Exception as e:
-            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
-    return JsonResponse({'status': 'error', 'message': 'Méthode non autorisée'}, status=405)
+    if request.method == "POST":
+        education = Education.objects.get(id=education_id)
+        
+        # print('@ details de l\'experience:', experience)
+
+        if not education:
+            return JsonResponse({'statut': 0, 'message': _("Education non trouvée.")}, status=404)
+
+        education.status = EducationStatus.SUPPRIMER  # Correction de la virgule
+        education.save()
+
+        return JsonResponse({'statut': 1, 'message': _("Education supprimée avec succès !")})
+    
+    return JsonResponse({'statut': 0, 'message': _("Requête invalide.")}, status=400)
 
 
 
