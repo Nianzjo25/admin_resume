@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import CustomLoginView, ExperienceView, LoginView, LoginViewCover, LoginViewIllustrator, PasswordReset, RegistrationView, UserPasswordChangeView, UserPasswordResetConfirmView, add_experience, changelog, delete_experience, edit_experience, error_404, error_500, experiences_datatables, form_elements, icons, index, lock_screen, login_link, logout_view, maintenance, page_loader, terms_service, profile, settings, update_experience
+from .views import *
 from django.contrib.auth import views as auth_views
 
 urlpatterns = [
@@ -9,10 +9,16 @@ urlpatterns = [
     # Experience
     path('experience/', ExperienceView.as_view(), name='experience'),
     path('experiences_datatables/', experiences_datatables, name='experiences_datatables'),
-    path('add_experience/', add_experience, name='add_experience'),
-    path('edit_experience/<int:experience_id>/', edit_experience, name='edit_experience'),  # New URL for displaying modal
-    path('update_experience/<int:experience_id>/', update_experience, name='update_experience'),  # Update action
-    path('delete_experience/<int:experience_id>/', delete_experience, name='delete_experience'),
+    path('experience/add/', add_experience, name='add_experience'),
+    path('experience/edit/<int:experience_id>/', edit_experience, name='edit_experience'),  # New URL for displaying modal
+    path('experience/update/<int:experience_id>/', update_experience, name='update_experience'),  # Update action
+    path('experience/delete/<int:experience_id>/', delete_experience, name='delete_experience'),
+    
+    path('education/', EducationViews.as_view(), name='education'),
+    path('eductation/add/', add_education, name='add_education'),
+    path('eductation/update/<int:education_id>/', update_education, name='update_education'),
+    path('eductation/edit/<int:education_id>/', edit_education, name='edit_education'),
+    path('eductation/delete/<int:education_id>/', delete_education, name='delete_education'),
 
     # Authentication
     

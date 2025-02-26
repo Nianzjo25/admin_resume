@@ -1,0 +1,108 @@
+<div class="modal modal-blur fade" id="add-education-modal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{{ _('AJOUTER_FORMATION') }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="add-education-form" action="{% url 'add_education' %}" method="post">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="alert" role="alert" style="display: none;">
+            <span class="message"></span>
+          </div>
+          <!-- Nom de la formation -->
+          <div class="row mb-3">
+            <div class="col-lg-12">
+              <label class="form-label required">{{ _('Nom_Formation') }}</label>
+              <input type="text" class="form-control" name="nom" required>
+              <div class="invalid-feedback"></div>
+            </div>
+          </div>
+          <!-- Établissement -->
+          <div class="row mb-3">
+            <div class="col-lg-12">
+              <label class="form-label required">{{ _('Etablissement') }}</label>
+              <input type="text" class="form-control" name="etablissement" required>
+              <div class="invalid-feedback"></div>
+            </div>
+          </div>
+          <!-- Dates -->
+          <div class="row mb-3">
+            <div class="col-lg-6">
+              <label class="form-label required">{{ _('Date_Debut') }}</label>
+              <input type="date" class="form-control" name="date_debut" required>
+              <div class="invalid-feedback"></div>
+            </div>
+            <div class="col-lg-6">
+              <label class="form-label date-fin-label">{{ _('Date_Fin') }}</label>
+              <input type="date" class="form-control" name="date_fin">
+              <div class="invalid-feedback"></div>
+            </div>
+          </div>
+          <!-- Status En cours -->
+          <div class="row mb-3">
+            <div class="col-lg-12">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="is_en_cours" id="is_en_cours">
+                <label class="form-check-label" for="is_en_cours">
+                  {{ _('Formation_En_Cours') }}
+                </label>
+              </div>
+            </div>
+          </div>
+          <!-- Intitulé du diplôme -->
+          <div class="row mb-3">
+            <div class="col-lg-12">
+              <label class="form-label required">{{ _('Intitule_Diplome') }}</label>
+              <input type="text" class="form-control" name="intitule" required>
+              <div class="invalid-feedback"></div>
+            </div>
+          </div>
+          <!-- Diplôme obtenu -->
+          <div class="row mb-3">
+            <div class="col-lg-12">
+              <label class="form-label">{{ _('Diplome_Obtenu') }}</label>
+              <input type="text" class="form-control" name="diplome">
+              <div class="invalid-feedback"></div>
+            </div>
+          </div>
+          <!-- Mention -->
+          <div class="row mb-3">
+            <div class="col-lg-12">
+              <label class="form-label">{{ _('Mention') }}</label>
+              <input type="text" class="form-control" name="mention">
+              <div class="invalid-feedback"></div>
+            </div>
+          </div>
+          <!-- Description -->
+          <div class="mb-3">
+            <label class="form-label required">{{ _('Description') }}</label>
+            <textarea class="form-control" name="description" rows="5" required></textarea>
+            <div class="invalid-feedback"></div>
+            <small class="form-hint">{{ _('Description_Formation_Hint') }}</small>
+          </div>
+          <!-- Files Section -->
+          <div class="row mb-3">
+            <div class="col-lg-6">
+              <label class="form-label">{{ _('Certificat') }}</label>
+              <input type="file" class="form-control" name="certificat_file" id="certificat_file">
+              <div class="invalid-feedback"></div>
+              <small class="form-hint">{{ _('Certificat_Hint') }}</small>
+            </div>
+            <div class="col-lg-6">
+              <label class="form-label">{{ _('Piece_Jointe') }}</label>
+              <input type="file" class="form-control" name="attachment_file" id="attachment_file">
+              <div class="invalid-feedback"></div>
+              <small class="form-hint">{{ _('Piece_Jointe_Hint') }}</small>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn me-auto" data-bs-dismiss="modal">{{ _('Annuler') }}</button>
+          <button type="button" class="btn btn-primary" id="btn-save-education">{{ _('Enregistrer_Formation') }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

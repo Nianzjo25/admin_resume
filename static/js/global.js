@@ -704,3 +704,487 @@ $(document).ready(function() {
         });
     }
 });
+
+$(document).ready(function() {
+    // Initialize mask application if needed
+    if (typeof window.AppliquerMaskSaisie === 'function') {
+        window.AppliquerMaskSaisie();
+    }
+
+    //************* AJOUT D'EDUCATION ***************//
+    $("#btn-add-education").on('click', function() {
+        $('#add-education-modal').modal('show');
+    });
+
+    //Bouton d'enregistrement de l'education
+    $("#btn-save-education").on('click', function() {
+        let btn_save_education = $(this);
+        let formulaire = $('#add-education-form');
+        let href = formulaire.attr('action');
+
+        $.validator.setDefaults({ ignore: [] });
+        
+        let formData = new FormData();
+        
+        let certificatFiles = $('#add-education-form #certificat_file')[0]?.files;
+        let attachmentFiles = $('#add-education-form #attachment_file')[0]?.files;
+
+        if (formulaire.valid()) {
+            btn_save_education.attr('disabled', true);
+
+            const notification = new Noty({
+                text: gettext('Voulez-vous vraiment créer cette formation ?'),
+                type: 'warning',
+                layout: 'center',
+                theme: 'custom',
+                timeout: false,
+                buttons: [
+                    Noty.button(gettext('OUI'), 'btn btn-primary', function() {
+                        notification.close();
+                        
+                        // Add files to FormData if they exist
+                        if (certificatFiles && certificatFiles.length > 0) {
+                            formData.append('certificat_file', certificatFiles[0]);
+                        }
+                        
+                        if (attachmentFiles && attachmentFiles.length > 0) {
+                            formData.append('attachment_file', attachmentFiles[0]);
+                        }
+                        
+                        // Explicitly set the is_en_cours value
+                        formData.append('is_en_cours', $('#is_en_cours').is(':checked') ? 'true' : 'false');
+                        
+                        // Serialize form data
+                        let data_serialized = formulaire.serialize();
+                        $.each(data_serialized.split('&'), function(index, elem) {
+                            let vals = elem.split('=');
+                            let key = vals[0];
+                            // Skip is_en_cours as we've already added it
+                            if (key !== 'is_en_cours') {
+                                let valeur = decodeURIComponent(vals[1].replace(/\+/g, ' '));
+                                formData.append(key, valeur);
+                            }
+                        });
+
+                        $.ajax({
+                            type: 'post',
+                            url: href,
+                            data: formData,
+                            processData: false,
+                            contentType: false,
+                            success: function(response) {
+                                if (response.status === 'success') {
+                                    resetFields('#' + formulaire.attr('id'));
+                                    notifySuccess(response.message, function() {
+                                        location.reload();
+                                    });
+                                    setTimeout(function() {
+                                        location.reload();
+                                    }, 500);
+                                } else {
+                                    let errors = response.errors || {};
+                                    let errors_list = '';
+                                    for (let field in errors) {
+                                        errors_list += '- ' + ucfirst(field) + ' : ' + errors[field] + '<br/>';
+                                        
+                                        // Highlight the fields with errors
+                                        let fieldElement = formulaire.find(`[name="${field}"]`);
+                                        fieldElement.addClass('is-invalid');
+                                        fieldElement.siblings('.invalid-feedback').text(errors[field]);
+                                    }
+                                    
+                                    $('#add-education-modal .alert .message').html(errors_list);
+                                    $('#add-education-modal .alert').show()
+                                        .removeClass('alert-success').addClass('alert-warning');
+                                    
+                                    btn_save_education.removeAttr('disabled');
+                                }
+                            },
+                            error: function(xhr) {
+                                try {
+                                    let response = JSON.parse(xhr.responseText);
+                                    if (response.message) {
+                                        notifyWarning(response.message);
+                                        
+                                        // Si nous avons des erreurs spécifiques aux champs
+                                        if (response.errors) {
+                                            let errors = response.errors;
+                                            for (let field in errors) {
+                                                let fieldElement = formulaire.find(`[name="${field}"]`);
+                                                fieldElement.addClass('is-invalid');
+                                                fieldElement.siblings('.invalid-feedback').text(errors[field]);
+                                            }
+                                        }
+                                    } else {
+                                        notifyWarning(gettext("Erreur lors de l'enregistrement"));
+                                    }
+                                } catch(e) {
+                                    notifyWarning(gettext("Erreur lors de l'enregistrement"));
+                                }
+                                btn_save_education.removeAttr('disabled');
+                            }
+                        });
+                    }),
+                    Noty.button(gettext('Annuler'), 'btn btn-danger', function() {
+                        notification.close();
+                        btn_save_education.removeAttr('disabled');
+                    })
+                ]
+            });
+
+            notification.show();
+        } else {
+            notifyWarning(gettext('Veuillez renseigner tous les champs obligatoires'));
+        }
+    });
+
+
+    //************* SUPPRESSION D'EDUCATION ***************//
+    $(".delete-education-btn").on('click', function() {
+        let educationId = $(this).data('id');
+        let deleteUrl = $(this).data('href');
+        let btn_delete = $(this);
+
+        const deleteNotification = new Noty({
+            text: gettext('Voulez-vous vraiment supprimer cette formation ?'),
+            type: 'error',
+            layout: 'center',
+            theme: 'custom',
+            timeout: false,
+            buttons: [
+                Noty.button(gettext('OUI'), 'btn btn-danger', function() {
+                    deleteNotification.close();
+                    btn_delete.attr('disabled', true);
+
+                    function getCookie(name) {
+                        let cookieValue = null;
+                        if (document.cookie && document.cookie !== '') {
+                            const cookies = document.cookie.split(';');
+                            for (let i = 0; i < cookies.length; i++) {
+                                const cookie = cookies[i].trim();
+                                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                                    break;
+                                }
+                            }
+                        }
+                        return cookieValue;
+                    }
+
+                    const csrftoken = getCookie('csrftoken');
+
+                    $.ajax({
+                        type: "POST",
+                        url: deleteUrl,
+                        headers: {
+                            'X-CSRFToken': csrftoken
+                        },
+                        success: function(response) {
+                            if (response.status === 'success') {
+                                notifySuccess(response.message || gettext("Formation supprimée avec succès"), function() {
+                                    location.reload();
+                                });
+                            } else {
+                                notifyWarning(response.message);
+                                btn_delete.removeAttr('disabled');
+                            }
+                        },
+                        error: function(xhr) {
+                            try {
+                                let response = JSON.parse(xhr.responseText);
+                                if (response.message) {
+                                    notifyWarning(response.message);
+                                } else {
+                                    notifyError(gettext("Erreur lors de la suppression"));
+                                }
+                            } catch(e) {
+                                notifyError(gettext("Erreur lors de la suppression"));
+                            }
+                            btn_delete.removeAttr('disabled');
+                        }
+                    });
+                }),
+                Noty.button(gettext('Annuler'), 'btn btn-secondary', function() {
+                    deleteNotification.close();
+                })
+            ]
+        });
+
+        deleteNotification.show();
+    });
+
+
+    // Handle "En cours" checkbox
+    function toggleDateFin(isChecked) {
+        const dateFin = $(this).closest('form').find('input[name="date_fin"]');
+        const dateFinLabel = $(this).closest('form').find('.date-fin-label');
+        
+        if (isChecked) {
+            dateFin.prop('disabled', true);
+            dateFin.val('');
+            dateFinLabel.removeClass('required');
+            dateFin.prop('required', false);
+        } else {
+            dateFin.prop('disabled', false);
+            dateFinLabel.addClass('required');
+            dateFin.prop('required', true);
+        }
+    }
+
+    // Initialize checkbox handler for both add and edit forms
+    $('#is_en_cours, #edit-is-en-cours').on('change', function() {
+        const isChecked = $(this).is(':checked');
+        const form = $(this).closest('form');
+        const dateFin = form.find('input[name="date_fin"]');
+        const dateFinLabel = form.find('.date-fin-label');
+        
+        if (isChecked) {
+            dateFin.prop('disabled', true);
+            dateFin.val('');
+            dateFinLabel.removeClass('required');
+            dateFin.prop('required', false);
+        } else {
+            dateFin.prop('disabled', false);
+            dateFinLabel.addClass('required');
+            dateFin.prop('required', true);
+        }
+    });
+
+    // Modify form validation
+    $('#add-education-form, #edit-education-form').each(function() {
+        $(this).validate({
+            errorPlacement: function(error, element) {
+                element.siblings('.invalid-feedback').text(error.text());
+            },
+            highlight: function(element) {
+                $(element).addClass('is-invalid');
+            },
+            unhighlight: function(element) {
+                $(element).removeClass('is-invalid');
+            },
+            rules: {
+                nom: "required",
+                date_debut: "required",
+                date_fin: {
+                    required: function(element) {
+                        const form = $(element).closest('form');
+                        const isEnCours = form.find('input[name="is_en_cours"]').is(':checked');
+                        return !isEnCours;
+                    }
+                },
+                intitule: "required",
+                etablissement: "required",
+                description: "required"
+            },
+            messages: {
+                nom: gettext("Ce champ est obligatoire"),
+                date_debut: gettext("Ce champ est obligatoire"),
+                date_fin: gettext("Ce champ est obligatoire pour une formation terminée"),
+                intitule: gettext("Ce champ est obligatoire"),
+                etablissement: gettext("Ce champ est obligatoire"),
+                description: gettext("Ce champ est obligatoire")
+            }
+        });
+    });
+
+    //************* EDITION D'EDUCATION ***************//
+
+    // Modify the edit form population
+    $(".edit-education-btn").on('click', function() {
+        let educationId = $(this).data('id');
+        let editUrl = $(this).data('href');
+        
+        // Update the form action URL with the education ID
+        $('#edit-education-form').attr('action', $('#edit-education-form').attr('action').replace('/0', '/' + educationId));
+        $('#edit-education-id').val(educationId);
+        
+        $.ajax({
+            url: editUrl,
+            type: 'GET',
+            success: function(response) {
+                if (response.status === 'success') {
+                    let data = response.data;
+                    
+                    // Fill form with existing data
+                    $('#edit-education-form input[name="nom"]').val(data.nom);
+                    $('#edit-education-form input[name="date_debut"]').val(data.date_debut);
+                    $('#edit-education-form input[name="date_fin"]').val(data.date_fin);
+                    
+                    // Handle status checkbox
+                    const isEnCours = data.status === 'EN_COURS';
+                    $('#edit-is-en-cours').prop('checked', isEnCours);
+                    
+                    // Apply date_fin toggle based on status
+                    const dateFin = $('#edit-education-form input[name="date_fin"]');
+                    const dateFinLabel = $('#edit-education-form .date-fin-label');
+                    
+                    if (isEnCours) {
+                        dateFin.prop('disabled', true);
+                        dateFin.val('');
+                        dateFinLabel.removeClass('required');
+                        dateFin.prop('required', false);
+                    } else {
+                        dateFin.prop('disabled', false);
+                        dateFinLabel.addClass('required');
+                        dateFin.prop('required', true);
+                    }
+                    
+                    // Rest of the form population
+                    $('#edit-education-form input[name="intitule"]').val(data.intitule);
+                    $('#edit-education-form input[name="etablissement"]').val(data.etablissement);
+                    $('#edit-education-form textarea[name="description"]').val(data.description);
+                    $('#edit-education-form input[name="diplome"]').val(data.diplome);
+                    $('#edit-education-form input[name="mention"]').val(data.mention);
+                    
+                    $('#edit-education-modal').modal('show');
+                } else {
+                    notifyError(response.message || gettext("Erreur lors de la récupération des données"));
+                }
+            },
+            error: function(xhr) {
+                try {
+                    let response = JSON.parse(xhr.responseText);
+                    if (response.message) {
+                        notifyError(response.message);
+                    } else {
+                        notifyError(gettext("Erreur lors de la récupération des données"));
+                    }
+                } catch(e) {
+                    notifyError(gettext("Erreur lors de la récupération des données"));
+                }
+            }
+        });
+    });
+    
+    // Bouton de mise à jour de l'éducation
+    $("#btn-update-education").on('click', function() {
+        let btn_update_education = $(this);
+        let formulaire = $('#edit-education-form');
+        let href = formulaire.attr('action');
+
+        $.validator.setDefaults({ ignore: [] });
+        
+        let formData = new FormData();
+        
+        let certificatFiles = $('#edit-education-form #edit-certificat-file')[0]?.files;
+        let attachmentFiles = $('#edit-education-form #edit-attachment-file')[0]?.files;
+
+        if (formulaire.valid()) {
+            btn_update_education.attr('disabled', true);
+
+            const notification = new Noty({
+                text: gettext('Voulez-vous vraiment mettre à jour cette formation ?'),
+                type: 'warning',
+                layout: 'center',
+                theme: 'custom',
+                timeout: false,
+                buttons: [
+                    Noty.button(gettext('OUI'), 'btn btn-primary', function() {
+                        notification.close();
+                        
+                        // Add files to FormData if they exist
+                        if (certificatFiles && certificatFiles.length > 0) {
+                            formData.append('certificat_file', certificatFiles[0]);
+                        }
+                        
+                        if (attachmentFiles && attachmentFiles.length > 0) {
+                            formData.append('attachment_file', attachmentFiles[0]);
+                        }
+                        
+                        // Explicitly set the is_en_cours value
+                        formData.append('is_en_cours', $('#edit-is-en-cours').is(':checked') ? 'true' : 'false');
+                        
+                        // Serialize form data
+                        let data_serialized = formulaire.serialize();
+                        $.each(data_serialized.split('&'), function(index, elem) {
+                            let vals = elem.split('=');
+                            let key = vals[0];
+                            // Skip is_en_cours as we've already added it
+                            if (key !== 'is_en_cours') {
+                                let valeur = decodeURIComponent(vals[1].replace(/\+/g, ' '));
+                                formData.append(key, valeur);
+                            }
+                        });
+
+                        $.ajax({
+                            type: 'post',
+                            url: href,
+                            data: formData,
+                            processData: false,
+                            contentType: false,
+                            success: function(response) {
+                                if (response.status === 'success') {
+                                    resetFields('#' + formulaire.attr('id'));
+                                    notifySuccess(response.message, function() {
+                                        location.reload();
+                                    });
+                                    setTimeout(function() {
+                                        location.reload();
+                                    }, 500);
+                                } else {
+                                    let errors = response.errors || {};
+                                    let errors_list = '';
+                                    for (let field in errors) {
+                                        errors_list += '- ' + ucfirst(field) + ' : ' + errors[field] + '<br/>';
+                                        
+                                        // Highlight the fields with errors
+                                        let fieldElement = formulaire.find(`[name="${field}"]`);
+                                        fieldElement.addClass('is-invalid');
+                                        fieldElement.siblings('.invalid-feedback').text(errors[field]);
+                                    }
+                                    
+                                    $('#edit-education-modal .alert .message').html(errors_list);
+                                    $('#edit-education-modal .alert').show()
+                                        .removeClass('alert-success').addClass('alert-warning');
+                                    
+                                    btn_update_education.removeAttr('disabled');
+                                }
+                            },
+                            error: function(xhr) {
+                                try {
+                                    let response = JSON.parse(xhr.responseText);
+                                    if (response.message) {
+                                        notifyWarning(response.message);
+                                        
+                                        // Si nous avons des erreurs spécifiques aux champs
+                                        if (response.errors) {
+                                            let errors = response.errors;
+                                            for (let field in errors) {
+                                                let fieldElement = formulaire.find(`[name="${field}"]`);
+                                                fieldElement.addClass('is-invalid');
+                                                fieldElement.siblings('.invalid-feedback').text(errors[field]);
+                                            }
+                                        }
+                                    } else {
+                                        notifyWarning(gettext("Erreur lors de la mise à jour"));
+                                    }
+                                } catch(e) {
+                                    notifyWarning(gettext("Erreur lors de la mise à jour"));
+                                }
+                                btn_update_education.removeAttr('disabled');
+                            }
+                        });
+                    }),
+                    Noty.button(gettext('Annuler'), 'btn btn-danger', function() {
+                        notification.close();
+                        btn_update_education.removeAttr('disabled');
+                    })
+                ]
+            });
+
+            notification.show();
+        } else {
+            notifyWarning(gettext('Veuillez renseigner tous les champs obligatoires'));
+        }
+    });
+
+    // Reset forms when closing modals
+    $('#add-education-modal, #edit-education-modal').on('hidden.bs.modal', function() {
+        let form = $(this).find('form');
+        form[0].reset();
+        form.find('.alert').hide();
+        form.find('.is-invalid').removeClass('is-invalid');
+        form.find('.invalid-feedback').text('');
+    });
+});
+

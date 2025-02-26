@@ -22,9 +22,9 @@ class ExperienceStatus(models.TextChoices):
     SUPPRIMER = 'SUPPRIMER'
 
 class EducationStatus(models.TextChoices):
-    ACTIVE = 'active'
-    COMPLETED = 'completed'
-    ONGOING = 'ongoing'
+    EN_COURS = 'EN COURS'
+    TERMINER = 'TERMINER'
+    SUPPRIMER = 'SUPPRIMER'
 
 class ProfilStatus(models.TextChoices):
     PUBLIC = 'public'

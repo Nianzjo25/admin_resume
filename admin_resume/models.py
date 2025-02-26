@@ -57,7 +57,7 @@ class Experience(models.Model):
     date_fin = models.DateField(null=True, blank=True)
     entreprise = models.CharField(max_length=255)
     fonction = models.CharField(max_length=255)
-    user = models.ForeignKey('UserProfile', on_delete=models.RESTRICT)
+    user = models.ForeignKey(UserProfile, on_delete=models.RESTRICT)
     status = models.CharField(
         max_length=20,
         choices=ExperienceStatus.choices,
@@ -90,13 +90,14 @@ class Experience(models.Model):
 
 class Education(models.Model):
     nom = models.CharField(max_length=255, null=True, blank=True)
-    annee = models.DateTimeField(blank=True, null=True, default=timezone.now)
+    date_debut = models.DateField(blank=True, null=True)
+    date_fin = models.DateField(blank=True, null=True)
     intitule = models.CharField(max_length=255, null=True, blank=True)
     user = models.ForeignKey(UserProfile, on_delete=models.RESTRICT)
     status = models.CharField(
         max_length=20,
-        choices=[(status.value, status.name) for status in EducationStatus],
-        default=EducationStatus.ACTIVE.value
+        choices=EducationStatus.choices,
+        default=EducationStatus.EN_COURS
     )
     etablissement = models.CharField(max_length=255, null=True, blank=True)
     description = models.TextField(null=True, blank=True)
@@ -109,6 +110,7 @@ class Education(models.Model):
         db_table = "education"
         verbose_name = _("Education")
         verbose_name_plural = _("Education")
+        ordering = ['-date_debut']
 
 
 class Profil(models.Model):

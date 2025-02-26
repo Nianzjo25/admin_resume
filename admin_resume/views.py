@@ -18,7 +18,7 @@ from django.utils.translation import gettext_lazy as _
 
 from django.contrib.auth.decorators import login_required
 
-from admin_resume.models import Experience, UserProfile
+from admin_resume.models import Experience, UserProfile, Education, EducationStatus
 
 def index(request):
     context = {
@@ -26,6 +26,53 @@ def index(request):
         'segment': 'index'
     }
     return render(request, 'pages/index.html', context)
+
+# Authentication
+class RegistrationView(CreateView):
+    template_name = 'pages/sign-up.html'
+    form_class = RegistrationForm
+    success_url = reverse_lazy('login')
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        return response
+
+class CustomLoginView(LoginView):
+    template_name = 'pages/sign-in.html'
+    form_class = LoginForm
+    success_url = reverse_lazy('index')
+
+class LoginViewIllustrator(LoginView):
+  template_name = 'pages/sign-in-illustration.html'
+  form_class = LoginForm
+
+class LoginViewCover(LoginView):
+  template_name = 'pages/sign-in-cover.html'
+  form_class = LoginForm
+
+def logout_view(request):
+    logout(request)
+    return redirect('/accounts/login/')
+
+
+def login_link(request):
+    return render(request, 'pages/sign-in-link.html')
+
+class PasswordReset(PasswordResetView):
+  template_name = 'pages/forgot-password.html'
+  form_class = UserPasswordResetForm
+
+class UserPasswordResetConfirmView(PasswordResetConfirmView):
+  template_name = 'pages/password-reset-confirm.html'
+  form_class = UserSetPasswordForm
+
+class UserPasswordChangeView(PasswordChangeView):
+  template_name = 'pages/password-change.html'
+  form_class = UserPasswordChangeForm
+
+def terms_service(request):
+    return render(request, 'pages/terms-of-service.html')
+
 
 class ExperienceView(LoginRequiredMixin, TemplateView):
     template_name = 'experiences/experience.html'
@@ -274,7 +321,6 @@ def update_experience(request, experience_id):
             return JsonResponse({'status': 0, 'message': str(e)})
     return JsonResponse({'status': 0, 'message': _('Method not allowed')})
 
-   
 @login_required
 @transaction.atomic
 def delete_experience(request, experience_id):
@@ -293,51 +339,207 @@ def delete_experience(request, experience_id):
         return JsonResponse({'statut': 1, 'message': _("Expérience supprimée avec succès !")})
     
     return JsonResponse({'statut': 0, 'message': _("Requête invalide.")}, status=400)
+
+class EducationViews(LoginRequiredMixin, TemplateView):
+    template_name = 'education/education.html'
     
-# Authentication
-class RegistrationView(CreateView):
-    template_name = 'pages/sign-up.html'
-    form_class = RegistrationForm
-    success_url = reverse_lazy('login')
+    def get(self, request):
+        education_list = Education.objects.filter(user=request.user.userprofile).order_by('-date_debut')
+        status_choices = EducationStatus.choices
+        
+        context = {
+            'education_list': education_list,
+            'status_choices': status_choices,
+            'segment': 'education',
+        }
+        return render(request, self.template_name, context)
 
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        return response
+@login_required
+def add_education(request):
+    if request.method == 'POST':
+        try:
+            # Validate required fields
+            required_fields = ['nom', 'date_debut', 'intitule', 'etablissement', 'description']
+            errors = {}
+            
+            for field in required_fields:
+                if not request.POST.get(field):
+                    errors[field] = _("Ce champ est obligatoire")
+            
+            # Validate date_fin if not en cours
+            is_en_cours = request.POST.get('is_en_cours') == 'true'
+            
+            if not is_en_cours and not request.POST.get('date_fin'):
+                errors['date_fin'] = _("La date de fin est obligatoire pour une formation terminée")
 
-class CustomLoginView(LoginView):
-    template_name = 'pages/sign-in.html'
-    form_class = LoginForm
-    success_url = reverse_lazy('index')
+            if errors:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': _("Veuillez corriger les erreurs suivantes"),
+                    'errors': errors
+                })
 
-class LoginViewIllustrator(LoginView):
-  template_name = 'pages/sign-in-illustration.html'
-  form_class = LoginForm
+            # Create education entry
+            education = Education.objects.create(
+                user=request.user.userprofile,
+                nom=request.POST.get('nom'),
+                date_debut=request.POST.get('date_debut'),
+                date_fin=None if is_en_cours else request.POST.get('date_fin'),
+                intitule=request.POST.get('intitule'),
+                status=EducationStatus.EN_COURS if is_en_cours else EducationStatus.TERMINER,
+                etablissement=request.POST.get('etablissement'),
+                description=request.POST.get('description'),
+                diplome=request.POST.get('diplome'),
+                mention=request.POST.get('mention')
+            )
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': _('Formation ajoutée avec succès.'),
+                'data': {'id': education.id}
+            })
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error',
+                'message': str(e)
+            }, status=400)
+    return JsonResponse({
+        'status': 'error',
+        'message': _('Méthode non autorisée')
+    }, status=405)
 
-class LoginViewCover(LoginView):
-  template_name = 'pages/sign-in-cover.html'
-  form_class = LoginForm
+@login_required
+def update_education(request, education_id):
+    if request.method == 'POST':
+        try:
+            education = Education.objects.filter(
+                id=education_id,
+                user=request.user.userprofile
+            ).first()
+            
+            if not education:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': _("Formation non trouvée")
+                })
+            
+            required_fields = ['nom', 'date_debut', 'intitule', 'etablissement', 'description']
+            errors = {}
+            
+            for field in required_fields:
+                if not request.POST.get(field):
+                    errors[field] = _("Ce champ est obligatoire")
+            
+            is_en_cours = request.POST.get('is_en_cours') == 'true'
+            if not is_en_cours and not request.POST.get('date_fin'):
+                errors['date_fin'] = _("La date de fin est obligatoire pour une formation terminée")
 
-def logout_view(request):
-    logout(request)
-    return redirect('/accounts/login/')
+            if errors:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': _("Veuillez corriger les erreurs suivantes"),
+                    'errors': errors
+                })
+            
+            education.nom = request.POST.get('nom')
+            education.date_debut = request.POST.get('date_debut')
+            education.date_fin = None if is_en_cours else request.POST.get('date_fin')
+            education.intitule = request.POST.get('intitule')
+            education.status = EducationStatus.EN_COURS if is_en_cours else EducationStatus.TERMINER
+            education.etablissement = request.POST.get('etablissement')
+            education.description = request.POST.get('description')
+            education.diplome = request.POST.get('diplome')
+            education.mention = request.POST.get('mention')
+            
+            education.save()
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': _("Formation mise à jour avec succès")
+            })
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error',
+                'message': str(e)
+            }, status=400)
+    return JsonResponse({
+        'status': 'error',
+        'message': _('Méthode non autorisée')
+    }, status=405)
 
-def login_link(request):
-    return render(request, 'pages/sign-in-link.html')
 
-class PasswordReset(PasswordResetView):
-  template_name = 'pages/forgot-password.html'
-  form_class = UserPasswordResetForm
+@login_required
+def edit_education(request, education_id):
+    """View for fetching education data to display in edit modal"""
+    if request.method == 'GET':
+        try:
+            education = Education.objects.filter(
+                id=education_id,
+                user=request.user.userprofile
+            ).first()
+            
+            if not education:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': _("Formation non trouvée")
+                })
+            
+            # Format dates correctly for date inputs
+            date_debut = education.date_debut.strftime('%Y-%m-%d') if education.date_debut else None
+            date_fin = education.date_fin.strftime('%Y-%m-%d') if education.date_fin else None
+                
+            data = {
+                'id': education.id,
+                'nom': education.nom,
+                'date_debut': date_debut,
+                'date_fin': date_fin,
+                'intitule': education.intitule,
+                'status': education.status,
+                'etablissement': education.etablissement,
+                'description': education.description,
+                'diplome': education.diplome or '',
+                'mention': education.mention or ''
+            }
+            
+            return JsonResponse({
+                'status': 'success',
+                'data': data
+            })
+        except Exception as e:
+            return
 
-class UserPasswordResetConfirmView(PasswordResetConfirmView):
-  template_name = 'pages/password-reset-confirm.html'
-  form_class = UserSetPasswordForm
+@login_required
+@transaction.atomic
+def delete_education(request, education_id):
+    education = get_object_or_404(Education, id=education_id, user=request.user.userprofile)
+    if request.method == 'POST':
+        try:
+            education.delete()
+            return JsonResponse({'status': 'success'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+    return JsonResponse({'status': 'error', 'message': 'Méthode non autorisée'}, status=405)
 
-class UserPasswordChangeView(PasswordChangeView):
-  template_name = 'pages/password-change.html'
-  form_class = UserPasswordChangeForm
 
-def terms_service(request):
-    return render(request, 'pages/terms-of-service.html')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
 
 def lock_screen(request):
     return render(request, 'pages/auth-lock.html')

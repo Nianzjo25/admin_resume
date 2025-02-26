@@ -1,0 +1,111 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{{ _("Education") }} - {% endblock title %}
+
+{% block content %}
+  <div class="page-wrapper">
+    <div class="page-header">
+      <div class="container">
+        <div class="row align-items-center">
+          <div class="col-auto">
+            <span class="avatar avatar-lg rounded" style="background-image: url({% static 'static/avatars/003m.jpg' %})"></span>
+          </div>
+          <div class="col">
+            <h1 class="fw-bold">{{ _("Educational Background") }}</h1>
+            <div class="my-2">{{ _("Academic achievements and qualifications") }}</div>
+          </div>
+          <div class="col-auto ms-auto">
+            <div class="btn-list">
+              <span id="btn-add-education" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#add-education-modal">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M12 5l0 14" />
+                    <path d="M5 12l14 0" />
+                </svg>
+                {{ _("Add Education") }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Page body -->
+    <div class="page-body">
+      <div class="container-xl">
+        <div class="row">
+          <div class="col-12">
+            <div class="card">
+              <div class="card-body">
+                <ul class="timeline">
+                  {% for edu in education_list %}
+                  <li class="timeline-event">
+                    <div class="timeline-event-icon bg-primary-lt">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M22 9l-10 -4l-10 4l10 4l10 -4v6" /><path d="M6 10.6v5.4a6 3 0 0 0 12 0v-5.4" /></svg>
+                    </div>
+                    <div class="card timeline-event-card">
+                      <div class="card-body">
+                        <div class="text-muted float-end">
+                          {{ edu.annee|date:"Y" }}
+                        </div>
+                        <h4>{{ edu.intitule }}</h4>
+                        <p class="text-muted">
+                          <strong>{{ edu.etablissement }}</strong><br>
+                          {{ edu.nom }}
+                        </p>
+                        <div class="mt-2">
+                          {% if edu.diplome %}
+                          <div class="mb-2">
+                            <strong>{{ _("Diploma") }}:</strong> {{ edu.diplome }}
+                          </div>
+                          {% endif %}
+                          {% if edu.mention %}
+                          <div>
+                            <strong>{{ _("Honors") }}:</strong> {{ edu.mention }}
+                          </div>
+                          {% endif %}
+                        </div>
+                        <div class="btn-list mt-3">
+                          <button class="btn btn-sm btn-primary edit-education-btn" 
+                                  data-id="{{ edu.id }}" 
+                                  data-bs-toggle="modal" 
+                                  data-bs-target="#edit-education-modal"
+                                  data-href="{% url 'edit_education' edu.id %}">
+                            {{ _("Edit") }}
+                          </button>
+                          <button class="btn btn-sm btn-danger delete-education-btn" 
+                                  data-id="{{ edu.id }}"
+                                  data-href="{% url 'delete_education' edu.id %}">
+                            {{ _("Delete") }}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                  {% empty %}
+                  <li class="text-center text-muted py-5">
+                    {{ _("No education entries yet. Click 'Add Education' to get started.") }}
+                  </li>
+                  {% endfor %}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% include 'includes/footer.html' %}
+  </div>
+
+  <!-- Modal Forms -->
+  {% include 'education/modals/add_education.html' %}
+  {% include 'education/modals/edit_education.html' %}
+{% endblock content %}
+
+{% block extrajs %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/noty/3.2.0/noty.min.js"></script>
+<script>
+// JavaScript code will be handled in a separate file
+</script>
+{% endblock %}
