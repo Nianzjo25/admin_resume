@@ -994,9 +994,20 @@ $(document).ready(function() {
         let educationId = $(this).data('id');
         let editUrl = $(this).data('href');
         
+        // Reset form display and state
+        $('#edit-education-modal .alert').hide();
+        $('#edit-education-form .is-invalid').removeClass('is-invalid');
+        $('#edit-education-form .invalid-feedback').text('');
+        
         // Update the form action URL with the education ID
-        $('#edit-education-form').attr('action', $('#edit-education-form').attr('action').replace('/0', '/' + educationId));
+        $('#edit-education-form').attr('action', $('#edit-education-form').attr('action').replace(/\/\d+$/, '/' + educationId));
         $('#edit-education-id').val(educationId);
+        
+        // Clear file inputs
+        $('#edit-certificat-file, #edit-attachment-file').val('');
+        
+        // Hide current file containers initially
+        $('#current-certificat-container, #current-attachment-container').hide();
         
         $.ajax({
             url: editUrl,
@@ -1005,17 +1016,22 @@ $(document).ready(function() {
                 if (response.status === 'success') {
                     let data = response.data;
                     
-                    // Fill form with existing data
-                    $('#edit-education-form input[name="nom"]').val(data.nom);
-                    $('#edit-education-form input[name="date_debut"]').val(data.date_debut);
-                    $('#edit-education-form input[name="date_fin"]').val(data.date_fin);
+                    // Fill form with existing data - ensure all fields get populated
+                    $('#edit-nom').val(data.nom || '');
+                    $('#edit-date-debut').val(data.date_debut || '');
+                    $('#edit-date-fin').val(data.date_fin || '');
+                    $('#edit-intitule').val(data.intitule || '');
+                    $('#edit-etablissement').val(data.etablissement || '');
+                    $('#edit-description').val(data.description || '');
+                    $('#edit-diplome').val(data.diplome || '');
+                    $('#edit-mention').val(data.mention || '');
                     
                     // Handle status checkbox
                     const isEnCours = data.status === 'EN_COURS';
                     $('#edit-is-en-cours').prop('checked', isEnCours);
                     
                     // Apply date_fin toggle based on status
-                    const dateFin = $('#edit-education-form input[name="date_fin"]');
+                    const dateFin = $('#edit-date-fin');
                     const dateFinLabel = $('#edit-education-form .date-fin-label');
                     
                     if (isEnCours) {
@@ -1029,12 +1045,18 @@ $(document).ready(function() {
                         dateFin.prop('required', true);
                     }
                     
-                    // Rest of the form population
-                    $('#edit-education-form input[name="intitule"]').val(data.intitule);
-                    $('#edit-education-form input[name="etablissement"]').val(data.etablissement);
-                    $('#edit-education-form textarea[name="description"]').val(data.description);
-                    $('#edit-education-form input[name="diplome"]').val(data.diplome);
-                    $('#edit-education-form input[name="mention"]').val(data.mention);
+                    // Handle file displays if they exist
+                    if (data.certificat_file) {
+                        $('#current-certificat-link').text(data.certificat_file_name || 'Certificat');
+                        $('#current-certificat-link').attr('href', data.certificat_file);
+                        $('#current-certificat-container').show();
+                    }
+                    
+                    if (data.attachment_file) {
+                        $('#current-attachment-link').text(data.attachment_file_name || 'Pièce jointe');
+                        $('#current-attachment-link').attr('href', data.attachment_file);
+                        $('#current-attachment-container').show();
+                    }
                     
                     $('#edit-education-modal').modal('show');
                 } else {
@@ -1089,6 +1111,15 @@ $(document).ready(function() {
                         
                         if (attachmentFiles && attachmentFiles.length > 0) {
                             formData.append('attachment_file', attachmentFiles[0]);
+                        }
+                        
+                        // Handle file removal flags if needed
+                        if ($('#remove-certificat').data('remove')) {
+                            formData.append('remove_certificat', 'true');
+                        }
+                        
+                        if ($('#remove-attachment').data('remove')) {
+                            formData.append('remove_attachment', 'true');
                         }
                         
                         // Explicitly set the is_en_cours value
@@ -1178,6 +1209,17 @@ $(document).ready(function() {
         }
     });
 
+    // Handle file removal buttons
+    $('#remove-certificat').on('click', function() {
+        $(this).data('remove', true);
+        $('#current-certificat-container').hide();
+    });
+    
+    $('#remove-attachment').on('click', function() {
+        $(this).data('remove', true);
+        $('#current-attachment-container').hide();
+    });
+
     // Reset forms when closing modals
     $('#add-education-modal, #edit-education-modal').on('hidden.bs.modal', function() {
         let form = $(this).find('form');
@@ -1185,6 +1227,11 @@ $(document).ready(function() {
         form.find('.alert').hide();
         form.find('.is-invalid').removeClass('is-invalid');
         form.find('.invalid-feedback').text('');
+        
+        // Reset file removal flags
+        $('#remove-certificat, #remove-attachment').data('remove', false);
+        
+        // Hide current file containers
+        $('#current-certificat-container, #current-attachment-container').hide();
     });
 });
-

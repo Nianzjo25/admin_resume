@@ -11,12 +11,12 @@
           <div class="alert" role="alert" style="display: none;">
             <span class="message"></span>
           </div>
-          <input type="hidden" id="edit-education-id" name="education_id">
+          <input type="hidden" id="edit-education-id" name="education_id" value="{{ education.id }}">
           <!-- Nom de la formation -->
           <div class="row mb-3">
             <div class="col-lg-12">
               <label class="form-label required">{{ _('Nom_Formation') }}</label>
-              <input type="text" class="form-control" name="nom" id="edit-nom" required>
+              <input type="text" class="form-control" name="nom" id="edit-nom" required value="{{ education.nom }}">
               <div class="invalid-feedback"></div>
             </div>
           </div>
@@ -24,7 +24,7 @@
           <div class="row mb-3">
             <div class="col-lg-12">
               <label class="form-label required">{{ _('Etablissement') }}</label>
-              <input type="text" class="form-control" name="etablissement" id="edit-etablissement" required>
+              <input type="text" class="form-control" name="etablissement" id="edit-etablissement" required value="{{ education.etablissement }}">
               <div class="invalid-feedback"></div>
             </div>
           </div>
@@ -32,12 +32,12 @@
           <div class="row mb-3">
             <div class="col-lg-6">
               <label class="form-label required">{{ _('Date_Debut') }}</label>
-              <input type="date" class="form-control" name="date_debut" id="edit-date-debut" required>
+              <input type="date" class="form-control" name="date_debut" id="edit-date-debut" required value="{{ education.date_debut|date:'Y-m-d' }}">
               <div class="invalid-feedback"></div>
             </div>
             <div class="col-lg-6">
               <label class="form-label date-fin-label required">{{ _('Date_Fin') }}</label>
-              <input type="date" class="form-control" name="date_fin" id="edit-date-fin" required>
+              <input type="date" class="form-control" name="date_fin" id="edit-date-fin" required value="{{ education.date_fin|date:'Y-m-d' }}">
               <div class="invalid-feedback"></div>
             </div>
           </div>
@@ -45,7 +45,7 @@
           <div class="row mb-3">
             <div class="col-lg-12">
               <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="is_en_cours" id="edit-is-en-cours">
+                <input class="form-check-input" type="checkbox" name="is_en_cours" id="edit-is-en-cours" {% if education.status == 'EN_COURS' %}checked{% endif %}>
                 <label class="form-check-label" for="edit-is-en-cours">
                   {{ _('Formation_En_Cours') }}
                 </label>
@@ -56,7 +56,7 @@
           <div class="row mb-3">
             <div class="col-lg-12">
               <label class="form-label required">{{ _('Intitule_Diplome') }}</label>
-              <input type="text" class="form-control" name="intitule" id="edit-intitule" required>
+              <input type="text" class="form-control" name="intitule" id="edit-intitule" required value="{{ education.intitule }}">
               <div class="invalid-feedback"></div>
             </div>
           </div>
@@ -64,7 +64,7 @@
           <div class="row mb-3">
             <div class="col-lg-12">
               <label class="form-label">{{ _('Diplome_Obtenu') }}</label>
-              <input type="text" class="form-control" name="diplome" id="edit-diplome">
+              <input type="text" class="form-control" name="diplome" id="edit-diplome" value="{{ education.diplome }}">
               <div class="invalid-feedback"></div>
             </div>
           </div>
@@ -72,14 +72,14 @@
           <div class="row mb-3">
             <div class="col-lg-12">
               <label class="form-label">{{ _('Mention') }}</label>
-              <input type="text" class="form-control" name="mention" id="edit-mention">
+              <input type="text" class="form-control" name="mention" id="edit-mention" value="{{ education.mention }}">
               <div class="invalid-feedback"></div>
             </div>
           </div>
           <!-- Description -->
           <div class="mb-3">
             <label class="form-label required">{{ _('Description') }}</label>
-            <textarea class="form-control" name="description" id="edit-description" rows="5" required></textarea>
+            <textarea class="form-control" name="description" id="edit-description" rows="5" required>{{ education.description }}</textarea>
             <div class="invalid-feedback"></div>
             <small class="form-hint">{{ _('Description_Formation_Hint') }}</small>
           </div>
