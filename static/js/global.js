@@ -706,14 +706,10 @@ $(document).ready(function() {
 });
 
 $(document).ready(function() {
-    // Initialize mask application if needed
-    if (typeof window.AppliquerMaskSaisie === 'function') {
-        window.AppliquerMaskSaisie();
-    }
-
     //************* AJOUT D'EDUCATION ***************//
     $("#btn-add-education").on('click', function() {
         $('#add-education-modal').modal('show');
+        window.AppliquerMaskSaisie();
     });
 
     //Bouton d'enregistrement de l'education
@@ -834,9 +830,26 @@ $(document).ready(function() {
 
             notification.show();
         } else {
+            $('label.error').css({ display: 'none', height: '0px' }).removeClass('error').text('');
+    
+            let validator = formulaire.validate();
+            $.each(validator.errorMap, function(index, value) {
+                console.log('Id: ' + index + ' Message: ' + value);
+            });
+    
             notifyWarning(gettext('Veuillez renseigner tous les champs obligatoires'));
+            btn_save_experience.removeAttr('disabled');
         }
     });
+      
+    // Handle modal closing - reset form
+    $('#add-education-modal').on('hidden.bs.modal', function() {
+        resetFields('#add-education-form');
+        $('#add-education-form .alert').hide();
+        $('#add-education-form .is-invalid').removeClass('is-invalid');
+        $('#add-education-form .invalid-feedback').text('');
+    });
+
 
 
     //************* SUPPRESSION D'EDUCATION ***************//
